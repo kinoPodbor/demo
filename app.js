@@ -1,842 +1,896 @@
+
 (() => {
   "use strict";
 
-  // =====================================================
-  // НАСТРОЙКИ
-  // =====================================================
-
-  // Укажи НОВЫЙ ключ TMDB. Старый ключ уже публиковался
-  // в коде, поэтому его лучше перевыпустить.
-  // Безопаснее обращаться к TMDB через серверный Worker.
+  // Получи ключ в настройках разработчика TMDB:
+  // https://www.themoviedb.org/settings/api
   const TMDB_API_KEY = "2bb8c24e985622869c01b9ced2972ebe";
+  const TMDB_API = "https://api.themoviedb.org/3";
+  const IMAGE_BASE = "https://image.tmdb.org/t/p/";
+  const STORAGE_KEY = "kinopodbor_game_collections_v1";
+  const HISTORY_KEY = "kinopodbor_game_history_v1";
 
-  const TMDB = "https://api.themoviedb.org/3";
-  const IMAGE = "https://image.tmdb.org/t/p/w500";
-  const AUTH_URL = "https://kinopodbor-auth.2dnd99vgwk.workers.dev";
-  const STORAGE_KEY = "kinopod_data_v3";
-
-  const $ = (selector, root = document) => root.querySelector(selector);
-  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const $ = (id) => document.getElementById(id);
 
   const state = {
-    section: "home",
-    filter: "all",
-    collection: "favorites",
-    page: 1,
-    totalPages: 1,
-    movies: [],
-    homeMovies: [],
-    genres: [],
-    selectedMovie: null,
-    loading: false,
-    requestId: 0,
-    gameMovie: null,
-    gameOptions: [],
-    gameAnswered: false,
-    gameScore: 0,
-    user: null,
+    collections: [],
+    editingMovies: [],
+    searchResults: [],
+    game: null,
+    busy: false,
     toastTimer: null
   };
 
-  function loadLocal() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      return {
-        favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
-        watched: Array.isArray(saved.watched) ? saved.watched : [],
-        reviews: saved.reviews && typeof saved.reviews === "object" ? saved.reviews : {},
-        playlists: Array.isArray(saved.playlists) ? saved.playlists : [],
-        records: saved.records && typeof saved.records === "object" ? saved.records : {},
-        settings: saved.settings && typeof saved.settings === "object" ? saved.settings : { theme: "dark" },
-        score: Number(saved.score) || 0,
-        cachedMovies: Array.isArray(saved.cachedMovies) ? saved.cachedMovies : []
-      };
-    } catch {
-      return {
-        favorites: [], watched: [], reviews: {}, playlists: [],
-        records: {}, settings: { theme: "dark" }, score: 0, cachedMovies: []
-      };
-    }
-  }
-
-  let data = loadLocal();
-
-  function saveLocal() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      showToast("Не удалось сохранить данные в браузере.");
-    }
-    updateProfile();
-  }
+  const DIFFICULTY = {
+    easy: { label: "Лёгкая", points: 100, hintCost: 20, hints: 3 },
+    medium: { label: "Средняя", points: 200, hintCost: 50, hints: 2 },
+    hard: { label: "Сложная", points: 300, hintCost: 100, hints: 1 }
+  };
 
   function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, char => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;",
-      '"': "&quot;", "'": "&#39;"
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
     })[char]);
   }
 
-  function imageURL(path) {
-    return path ? IMAGE + path : "";
+  function imageURL(path, size = "w500") {
+    return path ? IMAGE_BASE + size + path : "";
   }
 
-  function yearOf(movie) {
-    return (movie.release_date || movie.first_air_date || "").slice(0, 4) || "Год неизвестен";
+  function readJSON(key, fallback) {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? JSON.parse(value) : fallback;
+    } catch (error) {
+      console.warn("Не удалось прочитать сохранённые данные", error);
+      return fallback;
+    }
   }
 
-  function titleOf(movie) {
-    return movie.title || movie.name || "Без названия";
+  function saveCollections() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.collections));
+      return true;
+    } catch (error) {
+      toast("Не удалось сохранить данные. Возможно, закончилось место.");
+      return false;
+    }
   }
 
-  function ratingOf(movie) {
-    const rating = Number(movie.vote_average);
-    return Number.isFinite(rating) && rating > 0 ? rating.toFixed(1) : "—";
+  function newId() {
+    if (crypto && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
 
-  function normalizeMovie(movie) {
-    return {
-      ...movie,
-      id: Number(movie.id),
-      title: titleOf(movie),
-      release_date: movie.release_date || movie.first_air_date || "",
-      vote_average: Number(movie.vote_average) || 0
-    };
-  }
-
-  function findMovie(id) {
-    const numericId = Number(id);
-    return state.movies.find(movie => Number(movie.id) === numericId)
-      || state.homeMovies.find(movie => Number(movie.id) === numericId)
-      || data.cachedMovies.find(movie => Number(movie.id) === numericId)
-      || (state.selectedMovie && Number(state.selectedMovie.id) === numericId
-        ? state.selectedMovie
-        : null);
-  }
-
-  function rememberMovies(movies) {
-    const combined = new Map();
-    [...data.cachedMovies, ...state.homeMovies, ...state.movies, ...movies]
-      .filter(Boolean)
-      .forEach(movie => combined.set(Number(movie.id), movie));
-
-    data.cachedMovies = [...combined.values()].slice(-250);
-    saveLocal();
-  }
-
-  function showToast(message) {
-    const toast = $("#toast");
-    if (!toast) return;
-
-    toast.textContent = message;
-    toast.classList.add("show");
+  function toast(message) {
+    const element = $("toast");
+    element.textContent = message;
+    element.classList.add("show");
     clearTimeout(state.toastTimer);
-    state.toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+    state.toastTimer = setTimeout(() => element.classList.remove("show"), 2800);
   }
 
-  // =====================================================
-  // НАВИГАЦИЯ
-  // =====================================================
-
-  function showSection(name) {
-    const section = document.getElementById(name);
-    if (!section) return;
-
-    state.section = name;
-
-    $$(".page-section").forEach(item => {
-      item.classList.toggle("hidden", item.id !== name);
-    });
-
-    $$(".nav-link").forEach(button => {
-      button.classList.toggle("active", button.dataset.section === name);
-    });
-
-    if (name === "records") renderRecords();
-    if (name === "profile") updateProfile();
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  function setStatus(id, message) {
+    $(id).textContent = message;
   }
 
-  function initNavigation() {
-    $$("[data-section]").forEach(button => {
-      button.addEventListener("click", event => {
-        event.preventDefault();
-        showSection(button.dataset.section);
-      });
-    });
+  function getCollection(id) {
+    return state.collections.find(collection => collection.id === id);
   }
 
-  // =====================================================
-  // ЗАПРОСЫ К TMDB
-  // =====================================================
+  function getHistory() {
+    const history = readJSON(HISTORY_KEY, []);
+    return Array.isArray(history) ? history : [];
+  }
 
-  async function apiRequest(path, params = {}) {
-    if (!TMDB_API_KEY || TMDB_API_KEY === "ВСТАВЬ_НОВЫЙ_TMDB_API_KEY") {
-      throw new Error("Добавь новый API-ключ TMDB в app.js.");
+  async function tmdb(path, params = {}) {
+    if (!TMDB_API_KEY || TMDB_API_KEY.includes("ВСТАВЬ_")) {
+      throw new Error("Сначала вставь новый API-ключ TMDB в начало app.js.");
     }
 
-    const query = new URLSearchParams({
-      api_key: TMDB_API_KEY,
-      language: "ru-RU",
-      ...params
+    const url = new URL(TMDB_API + path);
+    url.searchParams.set("api_key", TMDB_API_KEY);
+    url.searchParams.set("language", "ru-RU");
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        url.searchParams.set(key, value);
+      }
     });
 
-    const response = await fetch(`${TMDB}${path}?${query}`);
-
+    const response = await fetch(url);
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error("TMDB не принял API-ключ. Проверь настройки ключа.");
-      }
-      if (response.status === 429) {
-        throw new Error("Слишком много запросов. Попробуй немного позже.");
-      }
-      throw new Error(`Ошибка TMDB: ${response.status}`);
+      let detail = "";
+      try {
+        const data = await response.json();
+        detail = data.status_message || "";
+      } catch (_) {}
+      throw new Error(detail || `TMDB вернул ошибку ${response.status}`);
     }
-
     return response.json();
   }
 
-  async function loadGenres() {
-    try {
-      const result = await apiRequest("/genre/movie/list");
-      state.genres = result.genres || [];
-
-      const select = $("#genreSelect");
-      if (!select) return;
-
-      const current = select.value;
-      select.innerHTML = '<option value="">Все жанры</option>';
-
-      state.genres.forEach(genre => {
-        const option = document.createElement("option");
-        option.value = String(genre.id);
-        option.textContent = genre.name;
-        select.appendChild(option);
-      });
-
-      if ([...select.options].some(option => option.value === current)) {
-        select.value = current;
-      }
-    } catch (error) {
-      showToast(error.message);
-    }
+  async function searchMovies(query) {
+    return tmdb("/search/movie", { query, include_adult: false, page: 1 });
   }
 
-  function getFilters() {
+  async function getMovieFrames(movieId) {
+    const data = await tmdb(`/movie/${movieId}/images`, {
+      include_image_language: "null,en"
+    });
+
+    const unique = new Set();
+    return (data.backdrops || [])
+      .filter(frame => frame.file_path && !unique.has(frame.file_path) && unique.add(frame.file_path))
+      .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
+      .slice(0, 12);
+  }
+
+  function normaliseMovie(movie) {
     return {
-      query: $("#searchInput")?.value.trim() || "",
-      genre: $("#genreSelect")?.value || "",
-      year: $("#yearSelect")?.value || "",
-      sort: $("#sortSelect")?.value || "rating"
+      id: Number(movie.id),
+      title: movie.title || movie.original_title || "Без названия",
+      year: (movie.release_date || "").slice(0, 4),
+      poster: movie.poster_path || "",
+      overview: movie.overview || ""
     };
   }
 
-  async function loadMovies(reset = true) {
-    if (state.loading) {
-      // Запрос будет повторён после завершения предыдущего.
-      state.requestId++;
+  function renderMovieResults() {
+    const root = $("movieSearchResults");
+    root.replaceChildren();
+
+    if (!state.searchResults.length) return;
+
+    state.searchResults.forEach(movie => {
+      const added = state.editingMovies.some(item => item.id === movie.id);
+      const card = document.createElement("article");
+      card.className = "movie-result";
+
+      const poster = document.createElement("img");
+      poster.alt = "";
+      poster.loading = "lazy";
+      poster.src = imageURL(movie.poster, "w185") || "";
+      poster.onerror = () => { poster.style.visibility = "hidden"; };
+
+      const info = document.createElement("div");
+      info.className = "movie-result-info";
+
+      const title = document.createElement("h4");
+      title.textContent = movie.title;
+
+      const year = document.createElement("p");
+      year.textContent = movie.year || "Год неизвестен";
+
+      const button = document.createElement("button");
+      button.className = "button " + (added ? "secondary" : "primary");
+      button.type = "button";
+      button.textContent = added ? "Уже добавлен" : "Добавить";
+      button.disabled = added;
+      button.addEventListener("click", () => addMovieToEditor(movie));
+
+      info.append(title, year, button);
+      card.append(poster, info);
+      root.append(card);
+    });
+  }
+
+  async function runMovieSearch() {
+    const query = $("movieSearch").value.trim();
+    if (!query) {
+      setStatus("movieSearchStatus", "Введи название фильма.");
       return;
     }
 
-    const requestId = ++state.requestId;
-    const filters = getFilters();
-
-    if (reset) state.page = 1;
-
-    state.loading = true;
-    $("#catalogStatus").textContent = "Загружаем фильмы…";
-    $("#loadMore").disabled = true;
+    $("movieSearchBtn").disabled = true;
+    setStatus("movieSearchStatus", "Ищем фильмы…");
+    $("movieSearchResults").replaceChildren();
 
     try {
-      const params = {
-        page: String(state.page),
-        include_adult: "false"
-      };
-
-      let endpoint;
-
-      if (filters.query) {
-        endpoint = "/search/movie";
-        params.query = filters.query;
-      } else {
-        endpoint = "/discover/movie";
-        params.sort_by = filters.sort === "rating"
-          ? "popularity.desc"
-          : filters.sort;
-
-        if (filters.genre) params.with_genres = filters.genre;
-        if (filters.year) params.primary_release_year = filters.year;
-      }
-
-      const result = await apiRequest(endpoint, params);
-
-      // Если пользователь успел изменить фильтры, старый результат не показываем.
-      if (requestId !== state.requestId) return;
-
-      let movies = (result.results || []).map(normalizeMovie);
-
-      if (filters.query && filters.genre) {
-        movies = movies.filter(movie =>
-          (movie.genre_ids || []).includes(Number(filters.genre))
-        );
-      }
-
-      if (filters.query && filters.year) {
-        movies = movies.filter(movie => yearOf(movie) === filters.year);
-      }
-
-      if (filters.sort === "title.asc") {
-        movies.sort((a, b) => titleOf(a).localeCompare(titleOf(b), "ru"));
-      } else if (filters.sort === "vote_average.desc") {
-        movies.sort((a, b) => b.vote_average - a.vote_average);
-      } else if (filters.sort === "primary_release_date.desc") {
-        movies.sort((a, b) => yearOf(b).localeCompare(yearOf(a)));
-      } else if (filters.sort === "primary_release_date.asc") {
-        movies.sort((a, b) => yearOf(a).localeCompare(yearOf(b)));
-      }
-
-      state.movies = reset ? movies : [...state.movies, ...movies];
-      state.totalPages = Number(result.total_pages) || 1;
-
-      if (state.filter !== "all") {
-        renderMovies($("#movieGrid"), getFilteredMovies(state.movies));
-      } else {
-        renderMovies($("#movieGrid"), state.movies);
-      }
-
-      $("#catalogStatus").textContent = state.movies.length
-        ? `Найдено фильмов: ${Number(result.total_results || state.movies.length).toLocaleString("ru-RU")}`
-        : "По этим фильтрам фильмов не найдено.";
-
-      $("#loadMore").classList.toggle("hidden", state.page >= state.totalPages);
-      rememberMovies(state.movies);
+      const data = await searchMovies(query);
+      state.searchResults = (data.results || [])
+        .filter(movie => movie.id && movie.title)
+        .slice(0, 12)
+        .map(normaliseMovie);
+      renderMovieResults();
+      setStatus(
+        "movieSearchStatus",
+        state.searchResults.length
+          ? `Найдено фильмов: ${state.searchResults.length}`
+          : "Ничего не найдено. Попробуй другое название."
+      );
     } catch (error) {
-      if (requestId === state.requestId) {
-        $("#catalogStatus").textContent = error.message;
-        $("#movieGrid").innerHTML =
-          `<p class="empty-state">${escapeHTML(error.message)}</p>`;
-      }
+      setStatus("movieSearchStatus", error.message);
     } finally {
-      state.loading = false;
-      $("#loadMore").disabled = false;
-
-      // Если фильтры поменялись во время запроса — выполняем новый запрос.
-      if (requestId !== state.requestId) {
-        loadMovies(true);
-      }
+      $("movieSearchBtn").disabled = false;
     }
   }
 
-  function initCatalog() {
-    let debounceTimer;
+  async function addMovieToEditor(movie) {
+    if (state.editingMovies.some(item => item.id === movie.id)) return;
 
-    $("#searchInput").addEventListener("input", () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => loadMovies(true), 400);
-    });
+    const entry = { ...movie, frame: "", frames: [], loading: true };
+    state.editingMovies.push(entry);
+    renderSelectedMovies();
+    renderMovieResults();
 
-    ["genreSelect", "yearSelect", "sortSelect"].forEach(id => {
-      $("#" + id).addEventListener("change", () => loadMovies(true));
-    });
+    try {
+      const frames = await getMovieFrames(movie.id);
+      const current = state.editingMovies.find(item => item.id === movie.id);
+      if (!current) return;
 
-    $("#quickFilters").addEventListener("click", event => {
-      const button = event.target.closest("[data-filter]");
-      if (!button) return;
+      current.frames = frames.map(frame => frame.file_path);
+      current.loading = false;
+      if (current.frames.length) current.frame = current.frames[0];
+      renderSelectedMovies();
+    } catch (error) {
+      const current = state.editingMovies.find(item => item.id === movie.id);
+      if (current) {
+        current.loading = false;
+        current.frameError = error.message;
+        renderSelectedMovies();
+      }
+    }
 
-      state.filter = button.dataset.filter;
-      $$("#quickFilters .chip").forEach(chip => {
-        chip.classList.toggle("active", chip === button);
+    renderMovieResults();
+  }
+
+  function removeMovieFromEditor(movieId) {
+    state.editingMovies = state.editingMovies.filter(movie => movie.id !== movieId);
+    renderSelectedMovies();
+    renderMovieResults();
+  }
+
+  function renderSelectedMovies() {
+    const root = $("selectedMovies");
+    root.replaceChildren();
+    $("selectedMovieCount").textContent = `${state.editingMovies.length} фильмов`;
+
+    if (!state.editingMovies.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "Добавь фильмы через поиск выше.";
+      root.append(empty);
+      return;
+    }
+
+    state.editingMovies.forEach(movie => {
+      const card = document.createElement("article");
+      card.className = "selected-movie";
+
+      const header = document.createElement("div");
+      header.className = "selected-movie-heading";
+
+      const title = document.createElement("h4");
+      title.textContent = `${movie.title}${movie.year ? " (" + movie.year + ")" : ""}`;
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "button secondary movie-remove";
+      remove.textContent = "Удалить";
+      remove.addEventListener("click", () => removeMovieFromEditor(movie.id));
+      header.append(title, remove);
+      card.append(header);
+
+      const description = document.createElement("p");
+      description.className = "muted";
+      description.textContent = movie.loading
+        ? "Загружаем кадры…"
+        : movie.frames.length
+          ? "Выбери один кадр для игры:"
+          : "Кадры не найдены. Попробуй другой фильм.";
+      card.append(description);
+
+      if (movie.frameError) {
+        const error = document.createElement("p");
+        error.className = "status";
+        error.textContent = movie.frameError;
+        card.append(error);
+      }
+
+      const grid = document.createElement("div");
+      grid.className = "frame-grid";
+
+      movie.frames.forEach(path => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "frame-option" + (path === movie.frame ? " selected" : "");
+        button.setAttribute("aria-label", "Выбрать кадр для " + movie.title);
+        button.setAttribute("aria-pressed", String(path === movie.frame));
+
+        const image = document.createElement("img");
+        image.loading = "lazy";
+        image.src = imageURL(path, "w300");
+        image.alt = "Кадр из фильма " + movie.title;
+
+        button.append(image);
+        button.addEventListener("click", () => {
+          movie.frame = path;
+          renderSelectedMovies();
+        });
+        grid.append(button);
       });
 
-      if (state.filter === "all") {
-        renderMovies($("#movieGrid"), state.movies);
+      card.append(grid);
+      root.append(card);
+    });
+  }
+
+  function resetEditor() {
+    $("collectionForm").reset();
+    $("collectionId").value = "";
+    $("editorHeading").textContent = "Создать коллекцию";
+    $("cancelEditBtn").classList.add("hidden");
+    $("collectionVisibility").value = "public";
+    $("defaultDifficulty").value = "medium";
+    $("defaultRounds").value = "10";
+    state.editingMovies = [];
+    state.searchResults = [];
+    $("movieSearchResults").replaceChildren();
+    setStatus("movieSearchStatus", "");
+    setStatus("editorStatus", "");
+    renderSelectedMovies();
+    renderMovieResults();
+  }
+
+  function editCollection(id) {
+    const collection = getCollection(id);
+    if (!collection) return;
+
+    $("collectionId").value = collection.id;
+    $("collectionName").value = collection.name;
+    $("collectionDescription").value = collection.description || "";
+    $("collectionVisibility").value = collection.visibility;
+    $("defaultDifficulty").value = collection.difficulty || "medium";
+    $("defaultRounds").value = String(collection.rounds || 10);
+    $("editorHeading").textContent = "Редактировать коллекцию";
+    $("cancelEditBtn").classList.remove("hidden");
+
+    state.editingMovies = collection.movies.map(movie => ({
+      ...movie,
+      frames: movie.frames || [movie.frame].filter(Boolean),
+      loading: false
+    }));
+
+    renderSelectedMovies();
+    $("editor").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function renderCollections() {
+    const root = $("collectionList");
+    root.replaceChildren();
+
+    const query = $("collectionSearch").value.trim().toLowerCase();
+    const filter = $("collectionFilter").value;
+
+    const visible = state.collections.filter(collection => {
+      const matchesText = `${collection.name} ${collection.description || ""}`
+        .toLowerCase().includes(query);
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "mine") ||
+        (filter === "public" && collection.visibility === "public");
+      return matchesText && matchesFilter;
+    });
+
+    $("collectionEmpty").classList.toggle("hidden", visible.length > 0);
+
+    visible.forEach(collection => {
+      const card = document.createElement("article");
+      card.className = "collection-card";
+
+      const cover = document.createElement("div");
+      cover.className = "collection-cover";
+      const first = collection.movies.find(movie => movie.frame);
+
+      if (first) {
+        const img = document.createElement("img");
+        img.loading = "lazy";
+        img.src = imageURL(first.frame, "w500");
+        img.alt = "Кадр коллекции " + collection.name;
+        cover.append(img);
       } else {
-        renderMovies($("#movieGrid"), getFilteredMovies(state.movies));
-      }
-    });
-
-    $("#loadMore").addEventListener("click", async () => {
-      if (state.loading || state.page >= state.totalPages) return;
-      state.page++;
-      await loadMovies(false);
-    });
-  }
-
-  function initYears() {
-    const select = $("#yearSelect");
-    const currentYear = new Date().getFullYear();
-
-    for (let year = currentYear; year >= 1950; year--) {
-      const option = document.createElement("option");
-      option.value = String(year);
-      option.textContent = String(year);
-      select.appendChild(option);
-    }
-  }
-
-  // =====================================================
-  // КАРТОЧКИ ФИЛЬМОВ
-  // =====================================================
-
-  function getFilteredMovies(movies) {
-    if (state.filter === "favorites") {
-      return movies.filter(movie => data.favorites.includes(Number(movie.id)));
-    }
-
-    if (state.filter === "watched") {
-      return movies.filter(movie => data.watched.includes(Number(movie.id)));
-    }
-
-    return movies;
-  }
-
-  function renderMovies(container, movies) {
-    if (!container) return;
-
-    if (!movies.length) {
-      container.innerHTML = '<p class="empty-state">Фильмы не найдены.</p>';
-      return;
-    }
-
-    container.innerHTML = movies.map(movie => {
-      const id = Number(movie.id);
-      const poster = imageURL(movie.poster_path);
-      const favorite = data.favorites.includes(id);
-      const watched = data.watched.includes(id);
-
-      return `
-        <article class="movie-card" data-movie-card="${id}">
-          <div class="poster-wrap" data-open-movie="${id}" tabindex="0" role="button"
-               aria-label="Подробнее: ${escapeHTML(titleOf(movie))}">
-            ${poster
-              ? `<img src="${poster}" alt="${escapeHTML(titleOf(movie))}" loading="lazy">`
-              : '<div class="poster-placeholder">🎬</div>'}
-            <span class="rating-badge">★ ${ratingOf(movie)}</span>
-          </div>
-          <div class="movie-card-info">
-            <h3 class="movie-title" data-open-movie="${id}">${escapeHTML(titleOf(movie))}</h3>
-            <div class="movie-meta">${escapeHTML(yearOf(movie))}</div>
-            <div class="movie-card-actions">
-              <button class="icon-button ${favorite ? "active" : ""}"
-                data-action="favorite" data-id="${id}"
-                aria-label="Избранное" title="Избранное">${favorite ? "♥" : "♡"}</button>
-              <button class="icon-button ${watched ? "active" : ""}"
-                data-action="watched" data-id="${id}"
-                aria-label="Просмотрено" title="Просмотрено">${watched ? "✓" : "＋"}</button>
-            </div>
-          </div>
-        </article>`;
-    }).join("");
-  }
-
-  function initMovieActions() {
-    document.addEventListener("click", event => {
-      const actionButton = event.target.closest("[data-action]");
-      if (actionButton) {
-        const movie = findMovie(actionButton.dataset.id);
-        if (!movie) return;
-
-        toggleCollection(actionButton.dataset.action, movie);
-        return;
+        const placeholder = document.createElement("div");
+        placeholder.className = "placeholder";
+        placeholder.textContent = "🎬";
+        cover.append(placeholder);
       }
 
-      const openButton = event.target.closest("[data-open-movie]");
-      if (openButton) {
-        openMovie(openButton.dataset.openMovie);
-      }
+      const body = document.createElement("div");
+      body.className = "collection-card-body";
+
+      const title = document.createElement("h3");
+      title.textContent = collection.name;
+
+      const description = document.createElement("p");
+      description.textContent = collection.description || "Без описания";
+
+      const pills = document.createElement("div");
+      pills.className = "pills";
+      [
+        collection.visibility === "public" ? "Публичная" : "Личная",
+        `${collection.movies.length} фильмов`,
+        DIFFICULTY[collection.difficulty]?.label || "Средняя",
+        `${collection.rounds || 10} раундов`
+      ].forEach(label => {
+        const pill = document.createElement("span");
+        pill.className = "pill";
+        pill.textContent = label;
+        pills.append(pill);
+      });
+
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+
+      const play = document.createElement("button");
+      play.type = "button";
+      play.className = "button primary";
+      play.textContent = "Играть";
+      play.disabled = !collection.movies.some(movie => movie.frame);
+      play.addEventListener("click", () => {
+        $("gameCollection").value = collection.id;
+        $("gameDifficulty").value = collection.difficulty || "medium";
+        $("gameRounds").value = String(collection.rounds || 10);
+        $("gameResults").classList.add("hidden");
+        $("gamePlay").classList.add("hidden");
+        $("gameSetup").classList.remove("hidden");
+        $("game").scrollIntoView({ behavior: "smooth" });
+      });
+
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "button secondary";
+      edit.textContent = "Изменить";
+      edit.addEventListener("click", () => editCollection(collection.id));
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "button secondary";
+      remove.textContent = "Удалить";
+      remove.addEventListener("click", () => {
+        if (!confirm(`Удалить коллекцию «${collection.name}»?`)) return;
+        state.collections = state.collections.filter(item => item.id !== collection.id);
+        saveCollections();
+        renderCollections();
+        renderGameCollectionOptions();
+        toast("Коллекция удалена");
+      });
+
+      actions.append(play, edit, remove);
+      body.append(title, description, pills, actions);
+      card.append(cover, body);
+      root.append(card);
     });
 
-    document.addEventListener("keydown", event => {
-      if ((event.key === "Enter" || event.key === " ") &&
-          event.target.matches("[data-open-movie]")) {
-        event.preventDefault();
-        openMovie(event.target.dataset.openMovie);
-      }
-    });
+    renderGameCollectionOptions();
   }
 
-  function toggleCollection(type, movie) {
-    const id = Number(movie.id);
-    const collection = type === "favorite" ? data.favorites : data.watched;
-    const index = collection.indexOf(id);
+  function renderGameCollectionOptions() {
+    const select = $("gameCollection");
+    const previous = select.value;
+    select.replaceChildren();
 
-    if (index >= 0) {
-      collection.splice(index, 1);
-      showToast(type === "favorite" ? "Удалено из избранного" : "Удалено из просмотренного");
-    } else {
-      collection.push(id);
-      showToast(type === "favorite" ? "Добавлено в избранное ♥" : "Отмечено как просмотренное ✓");
-    }
-
-    rememberMovies([movie]);
-    refreshAllCards();
-
-    if (state.selectedMovie && Number(state.selectedMovie.id) === id) {
-      openMovie(id);
-    }
-  }
-
-  function refreshAllCards() {
-    renderMovies($("#homeGrid"), state.homeMovies);
-    renderMovies($("#movieGrid"), getFilteredMovies(state.movies));
-    renderRecords();
-    updateProfile();
-  }
-
-  // =====================================================
-  // ИНФОРМАЦИЯ О ФИЛЬМЕ
-  // =====================================================
-
-  async function openMovie(id) {
-    let movie = findMovie(id);
-    if (!movie) return;
-
-    state.selectedMovie = movie;
-    const modal = $("#movieModal");
-    const body = $("#modalBody");
-
-    modal.classList.remove("hidden");
-    body.innerHTML = '<p class="status-text">Загружаем информацию…</p>';
-
-    try {
-      const details = await apiRequest(`/movie/${Number(id)}`);
-      movie = normalizeMovie({ ...movie, ...details });
-      state.selectedMovie = movie;
-      rememberMovies([movie]);
-    } catch {
-      // Если подробности недоступны, показываем данные карточки.
-    }
-
-    const favorite = data.favorites.includes(Number(movie.id));
-    const watched = data.watched.includes(Number(movie.id));
-    const poster = imageURL(movie.poster_path);
-    const genres = (movie.genres || [])
-      .map(genre => escapeHTML(genre.name))
-      .join(", ");
-
-    body.innerHTML = `
-      <div class="modal-movie">
-        <div>
-          ${poster ? `<img src="${poster}" alt="${escapeHTML(titleOf(movie))}">`
-            : '<div class="poster-placeholder">🎬</div>'}
-        </div>
-        <div>
-          <span class="eyebrow">ИНФОРМАЦИЯ О ФИЛЬМЕ</span>
-          <h2 id="modalTitle">${escapeHTML(titleOf(movie))}</h2>
-          <p>Год: ${escapeHTML(yearOf(movie))}</p>
-          <p>Рейтинг: ★ ${ratingOf(movie)}</p>
-          ${genres ? `<p>Жанры: ${genres}</p>` : ""}
-          ${movie.runtime ? `<p>Длительность: ${movie.runtime} мин.</p>` : ""}
-          <p>${escapeHTML(movie.overview || "Описание пока недоступно.")}</p>
-          <div class="modal-actions">
-            <button class="button button-primary" data-action="favorite" data-id="${movie.id}">
-              ${favorite ? "♥ В избранном" : "♡ В избранное"}
-            </button>
-            <button class="button button-outline" data-action="watched" data-id="${movie.id}">
-              ${watched ? "✓ Просмотрено" : "＋ Просмотрено"}
-            </button>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  function closeModal() {
-    $("#movieModal").classList.add("hidden");
-    state.selectedMovie = null;
-  }
-
-  function initModal() {
-    $("#closeModal").addEventListener("click", closeModal);
-    $$("[data-close-modal]").forEach(element =>
-      element.addEventListener("click", closeModal)
+    const usable = state.collections.filter(collection =>
+      collection.movies.some(movie => movie.frame)
     );
 
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") closeModal();
+    if (!usable.length) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Сначала создай коллекцию с кадрами";
+      select.append(option);
+      $("startGameBtn").disabled = true;
+      return;
+    }
+
+    usable.forEach(collection => {
+      const option = document.createElement("option");
+      option.value = collection.id;
+      option.textContent = `${collection.name} (${collection.movies.length})`;
+      select.append(option);
+    });
+
+    if (usable.some(collection => collection.id === previous)) {
+      select.value = previous;
+    }
+
+    $("startGameBtn").disabled = false;
+  }
+
+  function handleSaveCollection(event) {
+    event.preventDefault();
+
+    const name = $("collectionName").value.trim();
+    if (!name) {
+      setStatus("editorStatus", "Укажи название коллекции.");
+      return;
+    }
+
+    const movies = state.editingMovies
+      .filter(movie => movie.frame)
+      .map(movie => ({
+        id: movie.id,
+        title: movie.title,
+        year: movie.year,
+        poster: movie.poster,
+        overview: movie.overview,
+        frame: movie.frame,
+        frames: movie.frames
+      }));
+
+    if (!movies.length) {
+      setStatus("editorStatus", "Добавь хотя бы один фильм и выбери кадр.");
+      return;
+    }
+
+    const existingId = $("collectionId").value;
+    const existing = existingId ? getCollection(existingId) : null;
+
+    const collection = {
+      id: existingId || newId(),
+      name,
+      description: $("collectionDescription").value.trim(),
+      visibility: $("collectionVisibility").value,
+      difficulty: $("defaultDifficulty").value,
+      rounds: Number($("defaultRounds").value),
+      movies,
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (existing) {
+      state.collections = state.collections.map(item =>
+        item.id === existingId ? collection : item
+      );
+    } else {
+      state.collections.unshift(collection);
+    }
+
+    if (!saveCollections()) return;
+
+    renderCollections();
+    resetEditor();
+    toast("Коллекция сохранена");
+    $("collections").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function shuffle(items) {
+    const array = [...items];
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function startGame() {
+    const collection = getCollection($("gameCollection").value);
+    if (!collection) {
+      setStatus("gameSetupStatus", "Выбери коллекцию.");
+      return;
+    }
+
+    const movies = collection.movies.filter(movie => movie.frame);
+    if (!movies.length) {
+      setStatus("gameSetupStatus", "В этой коллекции нет выбранных кадров.");
+      return;
+    }
+
+    const difficulty = $("gameDifficulty").value;
+    const rounds = Number($("gameRounds").value);
+
+    // Все вопросы строятся исключительно по фильмам выбранной коллекции.
+    const questions = Array.from({ length: rounds }, (_, index) => {
+      const movie = movies[index % movies.length];
+      return { movie, revealedHint: 0, answered: false, skipped: false };
+    });
+
+    state.game = {
+      collectionId: collection.id,
+      collectionName: collection.name,
+      difficulty,
+      rounds,
+      questions: shuffle(questions),
+      index: 0,
+      score: 0,
+      correct: 0,
+      finished: false
+    };
+
+    $("gameSetup").classList.add("hidden");
+    $("gameResults").classList.add("hidden");
+    $("gamePlay").classList.remove("hidden");
+    showRound();
+  }
+
+  function buildOptions(question) {
+    const collection = getCollection(state.game.collectionId);
+    const allMovies = collection.movies.filter(movie => movie.frame);
+    const distractors = shuffle(allMovies.filter(movie => movie.id !== question.movie.id))
+      .slice(0, 3);
+
+    return shuffle([question.movie, ...distractors]);
+  }
+
+  function showRound() {
+    const game = state.game;
+    if (!game || game.finished) return;
+
+    const question = game.questions[game.index];
+    const difficulty = DIFFICULTY[game.difficulty];
+
+    $("roundLabel").textContent = `Раунд ${game.index + 1} / ${game.rounds}`;
+    $("scoreLabel").textContent = `Очки: ${game.score}`;
+    $("gameProgress").style.width = `${(game.index / game.rounds) * 100}%`;
+    $("gameFrame").replaceChildren();
+
+    const image = document.createElement("img");
+    image.alt = "Кадр для угадывания фильма";
+    image.src = imageURL(question.movie.frame, "w1280");
+    image.onerror = () => {
+      $("gameFrame").textContent = "Не удалось загрузить кадр.";
+    };
+    $("gameFrame").append(image);
+
+    $("hintArea").classList.add("hidden");
+    $("hintArea").textContent = "";
+    $("hintBtn").disabled = false;
+    $("hintBtn").textContent = `Показать подсказку (${difficulty.hints})`;
+    $("answerFeedback").textContent = "";
+    $("answerFeedback").className = "feedback";
+    $("nextRoundBtn").classList.add("hidden");
+    $("skipBtn").classList.remove("hidden");
+
+    const options = buildOptions(question);
+    const root = $("answerOptions");
+    root.replaceChildren();
+
+    options.forEach(movie => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "answer-option";
+      button.textContent = movie.title + (movie.year ? ` (${movie.year})` : "");
+      button.addEventListener("click", () => answerQuestion(movie.id, button));
+      root.append(button);
     });
   }
 
-  // =====================================================
-  // ГЛАВНАЯ
-  // =====================================================
+  function revealHint() {
+    const game = state.game;
+    if (!game || game.finished) return;
 
-  async function loadHome() {
-    try {
-      const result = await apiRequest("/movie/popular", { page: "1" });
-      state.homeMovies = (result.results || []).map(normalizeMovie);
-      renderMovies($("#homeGrid"), state.homeMovies);
-      rememberMovies(state.homeMovies);
-    } catch (error) {
-      $("#homeGrid").innerHTML =
-        `<p class="empty-state">${escapeHTML(error.message)}</p>`;
+    const question = game.questions[game.index];
+    if (question.answered || question.skipped) return;
+
+    const config = DIFFICULTY[game.difficulty];
+    if (question.revealedHint >= config.hints) {
+      $("hintBtn").disabled = true;
+      return;
+    }
+
+    question.revealedHint++;
+
+    let hint = "";
+    if (question.revealedHint === 1) {
+      hint = question.movie.year
+        ? `Год выхода: ${question.movie.year}.`
+        : "Год выхода неизвестен.";
+    } else if (question.revealedHint === 2) {
+      const title = question.movie.title;
+      hint = `Название начинается на «${Array.from(title)[0]}».`;
+    } else {
+      hint = `Оригинальное описание: ${question.movie.overview || "Описание отсутствует."}`;
+    }
+
+    $("hintArea").classList.remove("hidden");
+    $("hintArea").textContent += (question.revealedHint > 1 ? "\n" : "") + hint;
+    $("hintArea").style.whiteSpace = "pre-line";
+    $("hintBtn").textContent = question.revealedHint < config.hints
+      ? `Ещё подсказка (${config.hints - question.revealedHint})`
+      : "Все подсказки использованы";
+
+    if (question.revealedHint >= config.hints) {
+      $("hintBtn").disabled = true;
     }
   }
 
-  // =====================================================
-  // МОИ СПИСКИ
-  // =====================================================
+  function answerQuestion(movieId, chosenButton) {
+    const game = state.game;
+    if (!game || game.finished) return;
 
-  function initCollections() {
-    $$(".collection-tabs [data-collection]").forEach(button => {
-      button.addEventListener("click", () => {
-        state.collection = button.dataset.collection;
+    const question = game.questions[game.index];
+    if (question.answered || question.skipped) return;
 
-        $$(".collection-tabs [data-collection]").forEach(item => {
-          item.classList.toggle("active", item === button);
-        });
+    question.answered = true;
+    const correct = Number(movieId) === Number(question.movie.id);
+    const config = DIFFICULTY[game.difficulty];
 
-        renderRecords();
-      });
-    });
-  }
-
-  function renderRecords() {
-    const ids = state.collection === "favorites" ? data.favorites : data.watched;
-
-    const movies = ids.map(id => findMovie(id)).filter(Boolean);
-    renderMovies($("#recordsGrid"), movies);
-
-    $("#recordsEmpty").classList.toggle("hidden", movies.length > 0);
-    if (!movies.length) $("#recordsGrid").innerHTML = "";
-  }
-
-  // =====================================================
-  // ИГРА «УГАДАЙ ФИЛЬМ»
-  // =====================================================
-
-  function initGame() {
-    $("#nextQuestion").addEventListener("click", startGame);
-  }
-
-  async function startGame() {
-    const button = $("#nextQuestion");
-    button.disabled = true;
-    button.textContent = "Загружаем…";
-
-    try {
-      let pool = state.homeMovies.filter(movie => movie.poster_path);
-
-      if (pool.length < 4) {
-        const result = await apiRequest("/movie/popular", { page: "2" });
-        pool = [...pool, ...(result.results || []).map(normalizeMovie)
-          .filter(movie => movie.poster_path)];
-      }
-
-      pool = [...new Map(pool.map(movie => [movie.id, movie])).values()];
-
-      if (pool.length < 4) {
-        throw new Error("Не удалось загрузить достаточно фильмов.");
-      }
-
-      state.gameMovie = pool[Math.floor(Math.random() * pool.length)];
-
-      const others = pool.filter(movie => movie.id !== state.gameMovie.id);
-      others.sort(() => Math.random() - 0.5);
-
-      state.gameOptions = [state.gameMovie, ...others.slice(0, 3)]
-        .sort(() => Math.random() - 0.5);
-
-      state.gameAnswered = false;
-
-      $("#gamePoster").innerHTML =
-        `<img src="${imageURL(state.gameMovie.poster_path)}" alt="Постер-загадка">`;
-
-      $("#gameQuestion").textContent = "Как называется этот фильм?";
-      $("#gameFeedback").textContent = "";
-
-      $("#gameOptions").innerHTML = state.gameOptions.map(movie => `
-        <button class="game-option" data-game-id="${movie.id}">
-          ${escapeHTML(titleOf(movie))}
-        </button>`).join("");
-
-      $$("#gameOptions [data-game-id]").forEach(option => {
-        option.addEventListener("click", () => answerGame(option));
-      });
-
-      button.textContent = "Следующий вопрос";
-    } catch (error) {
-      $("#gameFeedback").textContent = error.message;
-      button.textContent = "Попробовать снова";
-    } finally {
-      button.disabled = false;
-      $("#gameScore").textContent = String(state.gameScore);
-    }
-  }
-
-  function answerGame(button) {
-    if (state.gameAnswered || !state.gameMovie) return;
-    state.gameAnswered = true;
-
-    const correct = Number(button.dataset.gameId) === Number(state.gameMovie.id);
-
-    $$("#gameOptions [data-game-id]").forEach(option => {
-      option.disabled = true;
-
-      if (Number(option.dataset.gameId) === Number(state.gameMovie.id)) {
-        option.classList.add("correct");
-      }
+    $("answerOptions").querySelectorAll("button").forEach(button => {
+      button.disabled = true;
     });
 
     if (correct) {
-      state.gameScore += 1;
-      data.score = state.gameScore;
-      saveLocal();
-      $("#gameFeedback").textContent = "Правильно! Отличное знание кино 🎉";
+      const points = Math.max(0, config.points - question.revealedHint * config.hintCost);
+      game.score += points;
+      game.correct++;
+      chosenButton.classList.add("correct");
+      $("answerFeedback").textContent = `Верно! +${points} очков`;
+      $("answerFeedback").classList.add("success");
     } else {
-      button.classList.add("wrong");
-      $("#gameFeedback").textContent =
-        `Не угадал! Правильный ответ: ${titleOf(state.gameMovie)}.`;
-    }
-
-    $("#gameScore").textContent = String(state.gameScore);
-    $("#nextQuestion").textContent = "Следующий вопрос";
-    updateProfile();
-  }
-
-  // =====================================================
-  // ПРОФИЛЬ И АВТОРИЗАЦИЯ
-  // =====================================================
-
-  function updateProfile() {
-    const user = state.user;
-    const name = user?.name || user?.displayName || user?.login || "Киноман";
-    const email = user?.email || (user ? "Вход выполнен" : "Ты используешь гостевой режим.");
-
-    $("#profileName").textContent = name;
-    $("#profileEmail").textContent = email;
-    $("#profileAvatar").textContent = [...name][0]?.toUpperCase() || "К";
-
-    $("#authStatus").textContent = user ? "Вход выполнен" : "Гостевой режим";
-    $("#authButton").textContent = user ? "Аккаунт подключён" : "Войти через Яндекс";
-    $("#logoutButton").classList.toggle("hidden", !user);
-
-    $("#favoriteCount").textContent = String(data.favorites.length);
-    $("#watchedCount").textContent = String(data.watched.length);
-    $("#scoreCount").textContent = String(data.score);
-  }
-
-  async function checkAuth() {
-    try {
-      const response = await fetch(`${AUTH_URL}/me`, {
-        credentials: "include"
-      });
-
-      if (!response.ok) {
-        state.user = null;
-        updateProfile();
-        return;
-      }
-
-      const result = await response.json();
-      state.user = result.user || result.profile || (result.id ? result : null);
-    } catch {
-      state.user = null;
-    }
-
-    updateProfile();
-  }
-
-  function initAuth() {
-    $("#authButton").addEventListener("click", () => {
-      if (state.user) {
-        showSection("profile");
-        return;
-      }
-
-      // Worker должен поддерживать маршрут /login и возвращать
-      // пользователя на адрес GitHub Pages после авторизации.
-      window.location.href = `${AUTH_URL}/login`;
-    });
-
-    $("#logoutButton").addEventListener("click", async () => {
-      try {
-        const response = await fetch(`${AUTH_URL}/logout`, {
-          method: "POST",
-          credentials: "include"
-        });
-
-        if (!response.ok) {
-          showToast("Worker не подтвердил выход.");
-          return;
+      chosenButton.classList.add("incorrect");
+      $("answerOptions").querySelectorAll("button").forEach(button => {
+        if (button.textContent.startsWith(question.movie.title)) {
+          button.classList.add("correct");
         }
+      });
+      $("answerFeedback").textContent = `Неверно. Правильный ответ: ${question.movie.title}`;
+      $("answerFeedback").classList.add("error");
+    }
 
-        state.user = null;
-        updateProfile();
-        showToast("Вы вышли из аккаунта.");
-      } catch {
-        showToast("Не удалось связаться с сервисом авторизации.");
+    $("scoreLabel").textContent = `Очки: ${game.score}`;
+    $("hintBtn").disabled = true;
+    $("skipBtn").classList.add("hidden");
+    $("nextRoundBtn").textContent =
+      game.index + 1 >= game.rounds ? "Показать результат" : "Следующий раунд";
+    $("nextRoundBtn").classList.remove("hidden");
+  }
+
+  function skipQuestion() {
+    const game = state.game;
+    if (!game || game.finished) return;
+
+    const question = game.questions[game.index];
+    if (question.answered || question.skipped) return;
+
+    question.skipped = true;
+    $("answerOptions").querySelectorAll("button").forEach(button => {
+      button.disabled = true;
+      if (button.textContent.startsWith(question.movie.title)) {
+        button.classList.add("correct");
       }
     });
+
+    $("answerFeedback").textContent =
+      `Раунд пропущен: 0 очков. Ответ: ${question.movie.title}`;
+    $("answerFeedback").classList.add("error");
+    $("hintBtn").disabled = true;
+    $("skipBtn").classList.add("hidden");
+    $("nextRoundBtn").textContent =
+      game.index + 1 >= game.rounds ? "Показать результат" : "Следующий раунд";
+    $("nextRoundBtn").classList.remove("hidden");
   }
 
-  // =====================================================
-  // НАСТРОЙКИ
-  // =====================================================
+  function nextRound() {
+    if (!state.game || state.game.finished) return;
 
-  function initSettings() {
-    const toggle = $("#themeToggle");
-    toggle.checked = data.settings.theme !== "light";
-
-    document.body.classList.toggle("light", data.settings.theme === "light");
-
-    toggle.addEventListener("change", () => {
-      data.settings.theme = toggle.checked ? "dark" : "light";
-      document.body.classList.toggle("light", !toggle.checked);
-      saveLocal();
-    });
-
-    $("#clearLocalData").addEventListener("click", () => {
-      const confirmed = window.confirm(
-        "Удалить локальные избранные фильмы, просмотренное и очки? Это действие нельзя отменить."
-      );
-
-      if (!confirmed) return;
-
-      data.favorites = [];
-      data.watched = [];
-      data.reviews = {};
-      data.playlists = [];
-      data.records = {};
-      data.score = 0;
-
-      saveLocal();
-      refreshAllCards();
-      showToast("Локальные данные очищены.");
-    });
-  }
-
-  // =====================================================
-  // ЗАПУСК
-  // =====================================================
-
-  async function init() {
-    initNavigation();
-    initCatalog();
-    initMovieActions();
-    initModal();
-    initCollections();
-    initGame();
-    initAuth();
-    initSettings();
-    updateProfile();
-
-    renderMovies($("#homeGrid"), state.homeMovies);
-    renderMovies($("#movieGrid"), state.movies);
-
-    if (!TMDB_API_KEY || TMDB_API_KEY === "ВСТАВЬ_НОВЫЙ_TMDB_API_KEY") {
-      $("#catalogStatus").textContent =
-        "Чтобы загрузить фильмы, настрой новый ключ TMDB в app.js.";
-      $("#homeGrid").innerHTML =
-        '<p class="empty-state">Добавь новый ключ TMDB, чтобы увидеть популярные фильмы.</p>';
+    if (state.game.index + 1 >= state.game.rounds) {
+      finishGame();
       return;
     }
 
-    initYears();
+    state.game.index++;
+    showRound();
+  }
 
-    await Promise.allSettled([loadGenres(), loadHome()]);
-    await loadMovies(true);
-    await checkAuth();
+  function finishGame() {
+    const game = state.game;
+    if (!game || game.finished) return;
+    game.finished = true;
+
+    const history = getHistory();
+    const previousBest = history
+      .filter(item => item.collectionId === game.collectionId)
+      .reduce((best, item) => Math.max(best, Number(item.score) || 0), 0);
+
+    const entry = {
+      id: newId(),
+      collectionId: game.collectionId,
+      collectionName: game.collectionName,
+      difficulty: game.difficulty,
+      rounds: game.rounds,
+      score: game.score,
+      correct: game.correct,
+      accuracy: Math.round((game.correct / game.rounds) * 100),
+      date: new Date().toISOString()
+    };
+
+    history.unshift(entry);
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 100)));
+    } catch (error) {
+      console.warn("Не удалось сохранить историю игры", error);
+    }
+
+    const best = Math.max(previousBest, game.score);
+    $("gameProgress").style.width = "100%";
+    $("gamePlay").classList.add("hidden");
+    $("gameResults").classList.remove("hidden");
+    $("finalScore").textContent = String(game.score);
+    $("resultSummary").textContent =
+      `Коллекция «${game.collectionName}». Сложность: ${DIFFICULTY[game.difficulty].label}. Раундов: ${game.rounds}.`;
+    $("correctCount").textContent = `${game.correct} / ${game.rounds}`;
+    $("accuracyCount").textContent = `${entry.accuracy}%`;
+    $("bestScore").textContent = String(best);
+
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const root = $("gameHistory");
+    root.replaceChildren();
+    const history = getHistory().slice(0, 10);
+
+    if (!history.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Пока нет завершённых игр.";
+      root.append(empty);
+      return;
+    }
+
+    history.forEach(entry => {
+      const row = document.createElement("div");
+      row.className = "history-row";
+
+      const left = document.createElement("span");
+      left.textContent = `${entry.collectionName} · ${entry.correct}/${entry.rounds}`;
+
+      const right = document.createElement("strong");
+      right.textContent = `${entry.score} очков`;
+
+      row.append(left, right);
+      root.append(row);
+    });
+  }
+
+  function init() {
+    const stored = readJSON(STORAGE_KEY, []);
+    state.collections = Array.isArray(stored) ? stored : [];
+
+    $("collectionForm").addEventListener("submit", handleSaveCollection);
+    $("movieSearchBtn").addEventListener("click", runMovieSearch);
+    $("movieSearch").addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runMovieSearch();
+      }
+    });
+
+    $("collectionSearch").addEventListener("input", renderCollections);
+    $("collectionFilter").addEventListener("change", renderCollections);
+
+    $("newCollectionBtn").addEventListener("click", () => {
+      resetEditor();
+      $("editor").scrollIntoView({ behavior: "smooth" });
+      $("collectionName").focus({ preventScroll: true });
+    });
+
+    $("cancelEditBtn").addEventListener("click", resetEditor);
+    $("startGameBtn").addEventListener("click", startGame);
+    $("hintBtn").addEventListener("click", revealHint);
+    $("skipBtn").addEventListener("click", skipQuestion);
+    $("nextRoundBtn").addEventListener("click", nextRound);
+
+    $("playAgainBtn").addEventListener("click", () => {
+      $("gameResults").classList.add("hidden");
+      $("gameSetup").classList.remove("hidden");
+      startGame();
+    });
+
+    $("backToSetupBtn").addEventListener("click", () => {
+      $("gameResults").classList.add("hidden");
+      $("gameSetup").classList.remove("hidden");
+    });
+
+    renderSelectedMovies();
+    renderCollections();
+    renderHistory();
   }
 
   document.addEventListener("DOMContentLoaded", init);
