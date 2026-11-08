@@ -1,190 +1,252 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101018">
-  <title>KinoPodbor — найди свой фильм</title>
-  <link rel="stylesheet" href="./style.css">
-  <script src="./app.js" defer></script>
+  <meta name="theme-color" content="#10111a">
+  <title>KinoPodbor — Игровые коллекции</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="topbar">
-    <a class="logo" href="#home" data-section="home">
-      <span class="logo-mark">К</span>
-      <span>Kino<span class="accent">Podbor</span></span>
-    </a>
-
-    <nav class="nav">
-      <button class="nav-link active" data-section="home">Главная</button>
-      <button class="nav-link" data-section="catalog">Каталог</button>
-      <button class="nav-link" data-section="game">Игра</button>
-      <button class="nav-link" data-section="records">Мои списки</button>
-      <button class="nav-link" data-section="profile">Профиль</button>
+    <a class="logo" href="#collections">Kino<span>Podbor</span></a>
+    <nav>
+      <a href="#collections">Коллекции</a>
+      <a href="#editor">Создать коллекцию</a>
+      <a href="#game">Игра</a>
     </nav>
-
-    <button id="authButton" class="button button-outline">Войти через Яндекс</button>
   </header>
 
-  <main>
-    <section id="home" class="page-section">
-      <div class="hero">
-        <div class="hero-content">
-          <span class="eyebrow">ТВОЙ КИНОМИР</span>
-          <h1>Какой фильм<br>посмотрим <span class="accent">сегодня?</span></h1>
-          <p>Ищи фильмы, сохраняй любимые и открывай для себя новые истории.</p>
-          <div class="hero-actions">
-            <button class="button button-primary" data-section="catalog">Найти фильм</button>
-            <button class="button button-outline" data-section="game">Сыграть в угадайку</button>
-          </div>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="hero-orbit orbit-one"></div>
-          <div class="hero-orbit orbit-two"></div>
-          <div class="hero-ticket">KP<span>✦</span></div>
-          <div class="floating-card card-one">🎬<small>Твоя история</small></div>
-          <div class="floating-card card-two">★<small>Новые открытия</small></div>
-        </div>
-      </div>
+  <main class="container">
+    <section class="hero">
+      <span class="eyebrow">УГАДАЙ ФИЛЬМ ПО КАДРУ</span>
+      <h1>Твоя коллекция.<br><span>Твои правила.</span></h1>
+      <p>Создавай игровые подборки, выбирай кадры и проверяй, насколько хорошо ты знаешь кино.</p>
+      <a class="button primary" href="#editor">Создать коллекцию</a>
+    </section>
 
+    <section id="collections" class="section">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">ПОДБОРКА</span>
-          <h2>Популярные фильмы</h2>
+          <span class="eyebrow">БИБЛИОТЕКА</span>
+          <h2>Игровые коллекции</h2>
         </div>
-        <button class="text-button" data-section="catalog">Весь каталог →</button>
+        <button id="newCollectionBtn" class="button secondary">＋ Создать</button>
       </div>
-      <div id="homeGrid" class="movie-grid"></div>
+
+      <div class="toolbar">
+        <input id="collectionSearch" type="search"
+          placeholder="Найти коллекцию…">
+        <select id="collectionFilter">
+          <option value="all">Все коллекции</option>
+          <option value="mine">Мои коллекции</option>
+          <option value="public">Публичные</option>
+        </select>
+      </div>
+
+      <div id="collectionList" class="collection-grid"></div>
+      <p id="collectionEmpty" class="empty hidden">
+        Пока нет коллекций. Создай первую!
+      </p>
+      <p class="notice">
+        Публичные коллекции в этой версии доступны в текущем браузере.
+        Для публикации между пользователями потребуется подключённый сервер.
+      </p>
     </section>
 
-    <section id="catalog" class="page-section hidden">
-      <div class="page-heading">
-        <span class="eyebrow">ПОИСК И ОТКРЫТИЯ</span>
-        <h1>Каталог фильмов</h1>
-        <p>Подбери фильм по названию, жанру, году или рейтингу.</p>
-      </div>
-
-      <div class="filters">
-        <label class="search-box">
-          <span>⌕</span>
-          <input id="searchInput" type="search" placeholder="Название фильма..." autocomplete="off">
-        </label>
-
-        <select id="genreSelect" aria-label="Жанр">
-          <option value="">Все жанры</option>
-        </select>
-
-        <select id="yearSelect" aria-label="Год выхода">
-          <option value="">Все годы</option>
-        </select>
-
-        <select id="sortSelect" aria-label="Сортировка">
-          <option value="rating">По популярности</option>
-          <option value="vote_average.desc">По рейтингу</option>
-          <option value="primary_release_date.desc">Сначала новые</option>
-          <option value="primary_release_date.asc">Сначала старые</option>
-          <option value="title.asc">По названию А—Я</option>
-        </select>
-      </div>
-
-      <div id="quickFilters" class="chips">
-        <button class="chip active" data-filter="all">Все фильмы</button>
-        <button class="chip" data-filter="favorites">Избранное</button>
-        <button class="chip" data-filter="watched">Просмотренные</button>
-      </div>
-
-      <p id="catalogStatus" class="status-text" aria-live="polite"></p>
-      <div id="movieGrid" class="movie-grid"></div>
-      <button id="loadMore" class="button button-outline load-more hidden">Загрузить ещё</button>
-    </section>
-
-    <section id="game" class="page-section hidden">
-      <div class="page-heading">
-        <span class="eyebrow">КИНОВИКТОРИНА</span>
-        <h1>Угадай фильм</h1>
-        <p>Посмотри на постер и попробуй вспомнить название.</p>
-      </div>
-
-      <div class="game-panel">
-        <div id="gamePoster" class="game-poster">
-          <span class="game-placeholder">🎬</span>
+    <section id="editor" class="section">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">КОНСТРУКТОР</span>
+          <h2 id="editorHeading">Создать коллекцию</h2>
         </div>
-        <div class="game-content">
-          <span class="eyebrow">ВОПРОС</span>
-          <h2 id="gameQuestion">Готов проверить свои знания?</h2>
-          <div id="gameOptions" class="game-options"></div>
-          <p id="gameFeedback" class="game-feedback" aria-live="polite"></p>
-          <div class="game-footer">
-            <span>Очки: <strong id="gameScore">0</strong></span>
-            <button id="nextQuestion" class="button button-primary">Начать игру</button>
+      </div>
+
+      <form id="collectionForm" class="panel">
+        <input id="collectionId" type="hidden">
+
+        <label for="collectionName">Название коллекции</label>
+        <input id="collectionName" maxlength="70" required
+          placeholder="Например, Лучшие фантастические фильмы">
+
+        <label for="collectionDescription">Описание</label>
+        <textarea id="collectionDescription" maxlength="300" rows="3"
+          placeholder="Расскажи, что объединяет фильмы"></textarea>
+
+        <div class="two-columns">
+          <div>
+            <label for="collectionVisibility">Доступ</label>
+            <select id="collectionVisibility">
+              <option value="public">Публичная</option>
+              <option value="private">Личная</option>
+            </select>
+          </div>
+          <div>
+            <label for="defaultDifficulty">Сложность по умолчанию</label>
+            <select id="defaultDifficulty">
+              <option value="easy">Лёгкая</option>
+              <option value="medium" selected>Средняя</option>
+              <option value="hard">Сложная</option>
+            </select>
           </div>
         </div>
-      </div>
-    </section>
 
-    <section id="records" class="page-section hidden">
-      <div class="page-heading">
-        <span class="eyebrow">ТВОЯ КОЛЛЕКЦИЯ</span>
-        <h1>Мои списки</h1>
-        <p>Фильмы, к которым можно вернуться.</p>
-      </div>
-      <div class="collection-tabs">
-        <button class="chip active" data-collection="favorites">♥ Избранное</button>
-        <button class="chip" data-collection="watched">✓ Просмотренные</button>
-      </div>
-      <div id="recordsGrid" class="movie-grid"></div>
-      <p id="recordsEmpty" class="empty-state hidden">Здесь пока пусто. Добавь фильмы из каталога!</p>
-    </section>
+        <label for="defaultRounds">Раундов в игре</label>
+        <select id="defaultRounds">
+          <option value="3">3 раунда</option>
+          <option value="5">5 раундов</option>
+          <option value="10" selected>10 раундов</option>
+          <option value="15">15 раундов</option>
+        </select>
 
-    <section id="profile" class="page-section hidden">
-      <div class="page-heading">
-        <span class="eyebrow">ЛИЧНЫЙ КИНОМИР</span>
-        <h1>Мой профиль</h1>
-        <p>Твои списки, достижения и настройки.</p>
-      </div>
+        <div class="divider"></div>
 
-      <div class="profile-card">
-        <div class="avatar" id="profileAvatar">К</div>
-        <div class="profile-info">
-          <h2 id="profileName">Киноман</h2>
-          <p id="profileEmail">Войди через Яндекс, чтобы проверить авторизацию.</p>
-          <span id="authStatus" class="status-pill">Гостевой режим</span>
+        <h3>1. Добавь фильмы</h3>
+        <p class="muted">Ищи фильмы, затем выбери кадр для каждого фильма.</p>
+        <div class="search-row">
+          <input id="movieSearch" type="search"
+            placeholder="Название фильма…">
+          <button id="movieSearchBtn" class="button primary" type="button">
+            Найти
+          </button>
         </div>
-        <button id="logoutButton" class="button button-outline hidden">Выйти</button>
+        <div id="movieSearchStatus" class="status" aria-live="polite"></div>
+        <div id="movieSearchResults" class="movie-search-grid"></div>
+
+        <div class="divider"></div>
+
+        <div class="section-heading compact">
+          <h3>2. Кадры коллекции</h3>
+          <span id="selectedMovieCount" class="counter">0 фильмов</span>
+        </div>
+        <p class="muted">
+          Нажми на понравившийся кадр. Именно он будет показан в игре.
+        </p>
+        <div id="selectedMovies" class="selected-movies"></div>
+
+        <div class="form-actions">
+          <button class="button primary" type="submit">
+            Сохранить коллекцию
+          </button>
+          <button id="cancelEditBtn" class="button secondary hidden"
+            type="button">Отмена</button>
+        </div>
+        <p id="editorStatus" class="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="game" class="section">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">КИНОВИКТОРИНА</span>
+          <h2>Угадай фильм</h2>
+        </div>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card"><span>♥</span><strong id="favoriteCount">0</strong><small>В избранном</small></div>
-        <div class="stat-card"><span>✓</span><strong id="watchedCount">0</strong><small>Просмотрено</small></div>
-        <div class="stat-card"><span>★</span><strong id="scoreCount">0</strong><small>Очки в игре</small></div>
+      <div id="gameSetup" class="panel">
+        <p class="muted">
+          Выбери коллекцию и пройди ограниченную по времени игры
+          серию раундов. Здесь нет бесконечной игры.
+        </p>
+
+        <label for="gameCollection">Коллекция</label>
+        <select id="gameCollection"></select>
+
+        <div class="two-columns">
+          <div>
+            <label for="gameDifficulty">Сложность</label>
+            <select id="gameDifficulty">
+              <option value="easy">Лёгкая</option>
+              <option value="medium" selected>Средняя</option>
+              <option value="hard">Сложная</option>
+            </select>
+          </div>
+          <div>
+            <label for="gameRounds">Количество раундов</label>
+            <select id="gameRounds">
+              <option value="3">3</option>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="15">15</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rules">
+          <strong>Очки за правильный ответ</strong>
+          <p>Лёгкая: 100 · Средняя: 200 · Сложная: 300</p>
+          <p>Подсказка уменьшает награду. Пропуск — 0 очков.</p>
+        </div>
+
+        <button id="startGameBtn" class="button primary full-width">
+          Начать игру
+        </button>
+        <p id="gameSetupStatus" class="status" aria-live="polite"></p>
       </div>
 
-      <div class="settings-card">
-        <h2>Настройки</h2>
-        <label class="setting-row">
-          <span>Тёмная тема</span>
-          <input id="themeToggle" type="checkbox" checked>
-        </label>
-        <button id="clearLocalData" class="button button-danger">Очистить локальные данные</button>
-        <p class="muted">Локальные списки хранятся в браузере на этом устройстве.</p>
+      <div id="gamePlay" class="panel hidden">
+        <div class="game-topline">
+          <span id="roundLabel">Раунд 1 / 10</span>
+          <span id="scoreLabel">Очки: 0</span>
+        </div>
+
+        <div class="progress-track">
+          <div id="gameProgress" class="progress-fill"></div>
+        </div>
+
+        <div id="gameFrame" class="game-frame">
+          <span class="muted">Загружаем кадр…</span>
+        </div>
+
+        <div id="hintArea" class="hint-area hidden"></div>
+        <button id="hintBtn" class="button secondary full-width" type="button">
+          Показать подсказку
+        </button>
+
+        <h3>Какой это фильм?</h3>
+        <div id="answerOptions" class="answer-options"></div>
+        <p id="answerFeedback" class="feedback" aria-live="polite"></p>
+
+        <div class="game-actions">
+          <button id="skipBtn" class="button secondary" type="button">
+            Пропустить · 0 очков
+          </button>
+          <button id="nextRoundBtn" class="button primary hidden"
+            type="button">Следующий раунд</button>
+        </div>
+      </div>
+
+      <div id="gameResults" class="panel hidden">
+        <span class="eyebrow">ИГРА ЗАВЕРШЕНА</span>
+        <h2>Твой результат</h2>
+        <div class="result-score" id="finalScore">0</div>
+        <p id="resultSummary"></p>
+        <div class="result-stats">
+          <div><strong id="correctCount">0</strong><span>Верных ответов</span></div>
+          <div><strong id="accuracyCount">0%</strong><span>Точность</span></div>
+          <div><strong id="bestScore">0</strong><span>Лучший результат</span></div>
+        </div>
+        <h3>История результатов</h3>
+        <div id="gameHistory"></div>
+        <div class="form-actions">
+          <button id="playAgainBtn" class="button primary" type="button">
+            Играть снова
+          </button>
+          <button id="backToSetupBtn" class="button secondary" type="button">
+            К настройкам
+          </button>
+        </div>
       </div>
     </section>
+
+    <footer>
+      <a class="logo" href="#collections">Kino<span>Podbor</span></a>
+      <p>Информация о фильмах и кадрах предоставляется TMDB.</p>
+    </footer>
   </main>
 
-  <footer class="footer">
-    <a class="logo" href="#home" data-section="home">Kino<span class="accent">Podbor</span></a>
-    <p>Находи истории, которые остаются с тобой.</p>
-    <small>Информация о фильмах предоставляется TMDB. KinoPodbor не связан с TMDB.</small>
-  </footer>
-
-  <div id="movieModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal-backdrop" data-close-modal></div>
-    <article class="modal-card">
-      <button id="closeModal" class="modal-close" aria-label="Закрыть">×</button>
-      <div id="modalBody"></div>
-    </article>
-  </div>
-
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
 </body>
 </html>
