@@ -205,3 +205,51 @@ footer { display:flex; justify-content:space-between; gap:12px; margin-top:55px;
   .mobile-nav a:hover,.mobile-nav a:focus { color:var(--accent); }
   .toast { bottom:85px; width:max-content; max-width:90%; }
 }
+
+/* Переключение между страницами */
+.main > section.section,
+.main > section.hero {
+  display: none;
+}
+
+/* Показываем только активный раздел */
+.main > section.section.page-active,
+.main > section.hero.page-active {
+  display: block;
+}
+
+/* Главная страница */
+.main > section.hero.page-active {
+  display: flex;
+}
+
+/* Скрываем подвал, чтобы он не появлялся внизу каждого раздела */
+.main > footer {
+  display: none;
+}
+
+/* Отступы и прокрутка при переключении */
+.main {
+  min-width: 0;
+}
+
+.main > section.page-active {
+  animation: pageFadeIn 0.2s ease;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main > section.page-active {
+    animation: none;
+  }
+}
