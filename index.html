@@ -3,651 +3,205 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090b12">
-  <meta name="description" content="КиноПодбор — найди фильм под настроение">
-  <title>КиноПодбор — твоё кино</title>
-
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #090b12;
-      --panel: #121622;
-      --panel2: #191f2e;
-      --text: #f5f5fa;
-      --muted: #9ba3b8;
-      --gold: #e9c46a;
-      --border: #292f40;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background:
-        radial-gradient(ellipse at 80% 0%, #29213d 0, transparent 40%),
-        var(--bg);
-      color: var(--text);
-      font-family: Inter, system-ui, -apple-system, sans-serif;
-    }
-
-    button, input, select { font: inherit; }
-    button { cursor: pointer; }
-
-    .container { width: min(1120px, 92%); margin: auto; }
-
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 5;
-      background: #090b12ed;
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .topbar {
-      min-height: 76px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .brand {
-      color: var(--text);
-      text-decoration: none;
-      font-weight: 900;
-      letter-spacing: 1px;
-      font-size: 20px;
-      white-space: nowrap;
-    }
-
-    .brand-mark {
-      display: inline-grid;
-      place-items: center;
-      background: var(--gold);
-      color: #15120a;
-      width: 36px;
-      height: 36px;
-      border-radius: 11px;
-      margin-right: 8px;
-    }
-
-    .muted { color: var(--muted); }
-
-    .top-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .button {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 11px 16px;
-      background: var(--panel2);
-      color: var(--text);
-      transition: .2s;
-    }
-
-    .button:hover { transform: translateY(-1px); border-color: var(--gold); }
-
-    .primary {
-      background: var(--gold);
-      color: #17130a;
-      border-color: var(--gold);
-      font-weight: 750;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1.2fr .8fr;
-      align-items: center;
-      gap: 40px;
-      padding: 72px 0 64px;
-    }
-
-    .eyebrow {
-      color: var(--gold);
-      font-size: 12px;
-      letter-spacing: 2px;
-      font-weight: 800;
-    }
-
-    h1 {
-      font-size: clamp(40px, 6vw, 72px);
-      line-height: 1.05;
-      letter-spacing: -2px;
-      margin: 20px 0;
-    }
-
-    h1 em { color: var(--gold); font-style: normal; }
-
-    .hero p {
-      max-width: 530px;
-      color: var(--muted);
-      font-size: 17px;
-      line-height: 1.7;
-    }
-
-    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
-
-    .hero-art {
-      min-height: 300px;
-      border: 1px solid #403753;
-      border-radius: 28px;
-      background: linear-gradient(145deg, #302444, #121622 65%);
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .hero-disc {
-      width: 220px;
-      height: 220px;
-      border: 1px solid #e9c46a80;
-      border-radius: 50%;
-      display: grid;
-      place-content: center;
-      text-align: center;
-      font-size: 30px;
-      font-weight: 900;
-      box-shadow: 0 0 70px #e9c46a18;
-      transform: rotate(-8deg);
-    }
-
-    .hero-disc strong { color: var(--gold); }
-    .hero-disc small { color: var(--muted); font-size: 9px; letter-spacing: 2px; }
-
-    section.content-section { padding: 35px 0 55px; }
-
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    h2 { font-size: clamp(27px, 4vw, 38px); margin: 10px 0 0; }
-
-    .panel {
-      border: 1px solid var(--border);
-      background: var(--panel);
-      border-radius: 20px;
-      padding: 24px;
-    }
-
-    .toolbar {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    input, select {
-      min-width: 0;
-      width: 100%;
-      background: #0d111b;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 11px;
-      padding: 12px;
-      outline: none;
-    }
-
-    input:focus, select:focus { border-color: var(--gold); }
-
-    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-
-    .chip {
-      background: var(--panel2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 30px;
-      padding: 9px 14px;
-    }
-
-    .chip.active { border-color: var(--gold); color: var(--gold); }
-
-    .movie-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .movie-card {
-      min-width: 0;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      background: var(--panel);
-    }
-
-    .movie-poster {
-      aspect-ratio: 2 / 3;
-      background: linear-gradient(145deg, #302444, #171c2a);
-      display: grid;
-      place-items: center;
-      color: var(--gold);
-      font-size: 40px;
-    }
-
-    .movie-info { padding: 14px; }
-    .movie-info h3 { margin: 0 0 8px; font-size: 16px; }
-    .movie-info p { color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .movie-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .movie-actions button { flex: 1; padding: 8px; }
-
-    .game-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-
-    .game-frame {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      border-radius: 14px;
-      background: #080a10;
-      display: block;
-    }
-
-    .game-feedback { color: var(--gold); min-height: 24px; margin: 12px 0; }
-
-    .game-row { display: flex; gap: 10px; margin-top: 12px; }
-    .game-row input { flex: 1; }
-
-    .hearts { color: #ff718b; letter-spacing: 4px; }
-
-    .empty {
-      grid-column: 1 / -1;
-      padding: 35px;
-      text-align: center;
-      color: var(--muted);
-      border: 1px dashed var(--border);
-      border-radius: 16px;
-    }
-
-    footer {
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      padding: 26px 0;
-      font-size: 12px;
-      letter-spacing: 1px;
-    }
-
-    .auth-user { color: var(--gold); font-size: 14px; }
-
-    .notice {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 800px) {
-      .hero, .game-layout { grid-template-columns: 1fr; }
-      .hero { padding: 45px 0; }
-      .hero-art { min-height: 250px; }
-      .toolbar { grid-template-columns: 1fr 1fr; }
-      .movie-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .topbar { padding: 12px 0; align-items: flex-start; }
-      .top-actions { gap: 7px; }
-    }
-
-    @media (max-width: 450px) {
-      .brand { font-size: 16px; }
-      .topbar { flex-direction: column; }
-      .toolbar { grid-template-columns: 1fr; }
-      .panel { padding: 16px; }
-      .movie-grid { gap: 10px; }
-      .movie-info { padding: 10px; }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10111b">
+  <meta name="description" content="КиноПодбор — фильмы, подборки и киновызовы">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <title>КиноПодбор</title>
 </head>
-
 <body>
-<header>
-  <div class="container topbar">
-    <a class="brand" href="#home">
-      <span class="brand-mark">К</span>КИНО<span class="muted">ПОДБОР</span>
-    </a>
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="#home"><span class="brand-icon">К</span><span>Кино<span class="accent">Подбор</span></span></a>
 
-    <div class="top-actions">
-      <span id="authStatus" class="muted">Проверяем вход…</span>
-      <div id="authArea">
-        <button class="button primary" id="loginYandex">Войти через Яндекс</button>
-      </div>
-    </div>
-  </div>
-</header>
+      <div class="nav-label">МЕНЮ</div>
+      <nav class="side-nav">
+        <a class="nav-link active" href="#home">⌂ <span>Главная</span></a>
+        <a class="nav-link" href="#catalog">▦ <span>Каталог</span></a>
+        <a class="nav-link" href="#game">✦ <span>Киновызов</span></a>
+        <a class="nav-link" href="#records">♛ <span>Рекорды</span></a>
+        <a class="nav-link" href="#profile">◎ <span>Мой профиль</span></a>
+      </nav>
 
-<main class="container">
-  <section class="hero" id="home">
-    <div>
-      <div class="eyebrow">✦ ТВОЙ ВЕЧЕР. ТВОЁ КИНО.</div>
-      <h1>Найди фильм,<br><em>который зацепит.</em></h1>
-      <p>Открывай новые истории, собирай любимое кино и выбирай фильм под настроение.</p>
-      <div class="hero-actions">
-        <button class="button primary" id="surpriseBtn">✦ Удиви меня</button>
-        <a class="button" href="#catalog" style="text-decoration:none">Открыть каталог ↓</a>
-      </div>
-    </div>
-    <div class="hero-art">
-      <div class="hero-disc">КИНО<br><strong>ВЕЧЕР</strong><small>ВЫБИРАЙ С УДОВОЛЬСТВИЕМ</small></div>
-    </div>
-  </section>
-
-  <section class="content-section" id="catalog">
-    <div class="section-head">
-      <div><div class="eyebrow">КОЛЛЕКЦИЯ</div><h2>Исследуй кино</h2></div>
-      <span class="muted" id="resultCount">Демо-каталог</span>
-    </div>
-
-    <div class="toolbar">
-      <input id="searchInput" type="search" placeholder="Название фильма…" aria-label="Поиск">
-      <select id="genreSelect" aria-label="Жанр">
-        <option value="">Все жанры</option>
-        <option>Фантастика</option><option>Приключения</option>
-        <option>Драма</option><option>Анимация</option>
-        <option>Комедия</option><option>Фэнтези</option>
-      </select>
-      <select id="yearSelect" aria-label="Год">
-        <option value="">Любой год</option>
-      </select>
-      <select id="sortSelect" aria-label="Сортировка">
-        <option value="rating">По рейтингу</option>
-        <option value="year">Сначала новые</option>
-        <option value="title">По названию</option>
-      </select>
-    </div>
-
-    <div class="chips">
-      <button class="chip active" data-filter="all">Все фильмы</button>
-      <button class="chip" data-filter="favorites">♥ Избранное</button>
-      <button class="chip" data-filter="watched">✓ Просмотренные</button>
-    </div>
-
-    <div class="movie-grid" id="movieGrid"></div>
-  </section>
-
-  <section class="content-section" id="game">
-    <div class="section-head">
-      <div><div class="eyebrow">КИНОВЫЗОВ</div><h2>Угадай фильм</h2></div>
-      <span class="hearts" id="hearts">♥ ♥ ♥ ♥ ♥</span>
-    </div>
-
-    <div class="panel game-layout">
-      <div>
-        <h3>Угадай фильм по подсказке</h3>
-        <p class="muted">У тебя пять сердец. Неправильный ответ отнимает одно сердце.</p>
-        <button class="button primary" id="startGame">Начать раунд</button>
-        <div id="gamePrompt" class="notice">Нажми «Начать раунд», чтобы сыграть.</div>
-      </div>
-      <div>
-        <img id="gameFrame" class="game-frame" alt="Иллюстрация к кино-викторине">
-        <div class="game-row">
-          <input id="guessInput" placeholder="Название фильма…" autocomplete="off">
-          <button class="button primary" id="submitGuess">Ответить</button>
+      <div class="sidebar-bottom">
+        <div class="mini-profile">
+          <div class="avatar" id="sideAvatar">🎬</div>
+          <div class="mini-profile-text">
+            <strong id="sideName">Киноман</strong>
+            <span id="sideStatus">Локальный профиль</span>
+          </div>
         </div>
-        <div id="gameFeedback" class="game-feedback" aria-live="polite"></div>
+        <button class="nav-link settings-link" id="openSettings">⚙ <span>Настройки</span></button>
       </div>
-    </div>
-  </section>
+    </aside>
 
-  <section class="content-section" id="collections">
-    <div class="section-head">
-      <div><div class="eyebrow">ТВОЙ СПИСОК</div><h2>Моя коллекция</h2></div>
-    </div>
-    <div class="panel">
-      <p class="muted">Добавляй фильмы в избранное или отмечай просмотренные. Пока списки сохраняются в этом браузере.</p>
-      <div id="collectionSummary">Избранное: 0 · Просмотрено: 0</div>
-    </div>
-  </section>
-</main>
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">ТВОЯ КИНОВСЕЛЕННАЯ</div>
+          <h1 id="welcomeTitle">Что посмотрим сегодня?</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-button" id="themeToggle" title="Сменить тему" aria-label="Сменить тему">☼</button>
+          <button class="profile-button" id="profileShortcut"><span id="topAvatar">🎬</span><span id="topName">Профиль</span></button>
+          <div id="authArea"><button class="button primary" id="loginButton">Войти через Яндекс</button></div>
+        </div>
+      </header>
 
-<footer>
-  <div class="container">КИНОПОДБОР © 2026 · СОЗДАНО ДЛЯ ХОРОШЕГО КИНО</div>
-</footer>
+      <section class="hero" id="home">
+        <div class="hero-content">
+          <span class="pill">✦ ТВОЙ СЛЕДУЮЩИЙ ФАВОРИТ</span>
+          <h2>Истории, которые<br><span class="gradient-text">остаются с тобой.</span></h2>
+          <p>Ищи фильмы под настроение, открывай новое и проверяй свои знания кино.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#catalog">Открыть каталог ↗</a>
+            <button class="button secondary" id="surpriseButton">✦ Удиви меня</button>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="art-orbit orbit-one"></div>
+          <div class="art-orbit orbit-two"></div>
+          <div class="art-center">КИНО<small>ТВОЯ ИСТОРИЯ</small></div>
+          <span class="art-star star-one">✦</span>
+          <span class="art-star star-two">✧</span>
+        </div>
+      </section>
 
-<script>
-(() => {
-  "use strict";
+      <section class="section" id="catalog">
+        <div class="section-heading">
+          <div><div class="eyebrow">ТВОЯ КОЛЛЕКЦИЯ</div><h2>Каталог фильмов</h2></div>
+          <span class="muted" id="resultCount">Загружаем…</span>
+        </div>
 
-  const AUTH = "https://kinopodbor-auth.2dnd99vgwk.workers.dev";
-  const $ = id => document.getElementById(id);
-  const authArea = $("authArea");
+        <div class="search-row">
+          <label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Название фильма…" autocomplete="off"></label>
+          <select id="genreSelect" aria-label="Жанр"><option value="">Все жанры</option></select>
+          <select id="yearSelect" aria-label="Год"><option value="">Любой год</option></select>
+          <select id="sortSelect" aria-label="Сортировка">
+            <option value="popularity.desc">Популярные</option>
+            <option value="vote_average.desc">По рейтингу</option>
+            <option value="release_date.desc">Сначала новые</option>
+            <option value="release_date.asc">Сначала старые</option>
+          </select>
+        </div>
 
-  function renderLogin() {
-    authArea.replaceChildren();
-    const button = document.createElement("button");
-    button.className = "button primary";
-    button.textContent = "Войти через Яндекс";
-    button.onclick = () => location.href = AUTH + "/login";
-    authArea.appendChild(button);
-    $("authStatus").textContent = "Вы не вошли";
-  }
+        <div class="filter-tabs" id="quickFilters">
+          <button class="filter-tab active" data-filter="all">Все фильмы</button>
+          <button class="filter-tab" data-filter="favorites">♥ Избранное</button>
+          <button class="filter-tab" data-filter="watched">✓ Просмотренные</button>
+        </div>
 
-  async function checkAuth() {
-    renderLogin();
+        <div class="movie-grid" id="movieGrid">
+          <div class="empty-state">Загружаем фильмы…</div>
+        </div>
+        <div class="load-more"><button class="button secondary" id="loadMore">Показать ещё</button></div>
+      </section>
 
-    try {
-      const response = await fetch(AUTH + "/me", {
-        credentials: "include"
-      });
+      <section class="section game-section" id="game">
+        <div class="section-heading">
+          <div><div class="eyebrow">ПРОВЕРЬ СЕБЯ</div><h2>Киновызов</h2></div>
+          <span class="pill">♥ 5 сердец</span>
+        </div>
+        <div class="panel game-panel">
+          <div id="gameSetup">
+            <h3>Угадаешь фильм по постеру?</h3>
+            <p class="muted">Правильные ответы приносят очки. Подсказки стоят одного сердца.</p>
+            <div class="game-options">
+              <label>Имя игрока<input id="playerName" maxlength="20" placeholder="Киноман"></label>
+              <label>Раунды<select id="roundCount"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label>
+              <button class="button primary" id="startGame">Начать игру →</button>
+            </div>
+          </div>
+          <div id="gamePlay" hidden>
+            <div class="game-meta"><span id="roundLabel">Раунд 1</span><span id="gameScore">Очки: 0</span><span id="heartBar">♥ ♥ ♥ ♥ ♥</span></div>
+            <div class="game-card">
+              <img id="gamePoster" alt="Постер фильма">
+              <div class="game-question">
+                <div class="eyebrow">ЧТО ЭТО ЗА ФИЛЬМ?</div>
+                <h3 id="gamePrompt">Угадай название</h3>
+                <input id="guessInput" placeholder="Введи название…" autocomplete="off">
+                <button class="button primary" id="submitGuess">Ответить</button>
+                <p id="gameFeedback" aria-live="polite"></p>
+              </div>
+            </div>
+            <div class="hint-row">
+              <button class="button secondary hint-button" data-hint="year">Подсказка: год −♥</button>
+              <button class="button secondary hint-button" data-hint="genre">Подсказка: жанр −♥</button>
+              <button class="button secondary hint-button" data-hint="letter">Подсказка: буква −♥</button>
+            </div>
+            <button class="button primary" id="nextRound" hidden>Следующий раунд →</button>
+          </div>
+          <div id="gameResults" hidden></div>
+        </div>
+      </section>
 
-      if (!response.ok) return;
+      <section class="section" id="records">
+        <div class="section-heading"><div><div class="eyebrow">ЛУЧШИЕ РЕЗУЛЬТАТЫ</div><h2>Таблица рекордов</h2></div></div>
+        <div class="panel">
+          <div class="record-row record-head"><span>Место</span><span>Игрок</span><span>Очки</span></div>
+          <div id="leaderboardList"><div class="empty-state">Сыграй первый раунд!</div></div>
+          <p class="muted small">Пока рекорды хранятся в этом браузере.</p>
+        </div>
+      </section>
 
-      const data = await response.json();
-      const user = data.user || data;
-      const name = user.display_name || user.real_name || user.login;
+      <section class="section" id="profile">
+        <div class="section-heading"><div><div class="eyebrow">ТВОЯ КИНОИСТОРИЯ</div><h2>Профиль</h2></div></div>
+        <div class="panel profile-panel">
+          <div class="profile-avatar" id="profileAvatar">🎬</div>
+          <div class="profile-fields">
+            <label>Имя пользователя<input id="profileName" maxlength="24" placeholder="Как тебя называть?"></label>
+            <label>Аватар
+              <select id="profileEmoji">
+                <option value="🎬">🎬 Кино</option><option value="🍿">🍿 Попкорн</option>
+                <option value="🎭">🎭 Театр</option><option value="🚀">🚀 Фантастика</option>
+                <option value="🐱">🐱 Кот</option><option value="⭐">⭐ Звезда</option>
+              </select>
+            </label>
+            <button class="button primary" id="saveProfile">Сохранить профиль</button>
+          </div>
+          <div class="profile-stats">
+            <div><strong id="statWatched">0</strong><span>Просмотрено</span></div>
+            <div><strong id="statFavorites">0</strong><span>Избранное</span></div>
+            <div><strong id="statRecords">0</strong><span>Игр сыграно</span></div>
+          </div>
+        </div>
+        <div class="section-heading subheading"><div><h3>Мои отзывы</h3><p class="muted">Оставляй заметки к фильмам в их карточках.</p></div></div>
+        <div id="myReviews" class="panel"><div class="empty-state">Пока нет отзывов.</div></div>
+      </section>
 
-      if (!name) return;
+      <footer>КИНОПОДБОР © 2026 <span>Сделано для хорошего кино</span></footer>
+    </main>
+  </div>
 
-      authArea.replaceChildren();
+  <nav class="mobile-nav">
+    <a href="#home">⌂<small>Главная</small></a>
+    <a href="#catalog">▦<small>Каталог</small></a>
+    <a href="#game">✦<small>Игра</small></a>
+    <a href="#records">♛<small>Рекорды</small></a>
+    <a href="#profile">◎<small>Профиль</small></a>
+  </nav>
 
-      const label = document.createElement("span");
-      label.className = "auth-user";
-      label.textContent = "👤 " + name;
+  <div class="modal-backdrop" id="movieModal" hidden>
+    <section class="modal">
+      <button class="modal-close" data-close="movieModal" aria-label="Закрыть">×</button>
+      <div id="movieDetails"></div>
+    </section>
+  </div>
 
-      const logout = document.createElement("button");
-      logout.className = "button";
-      logout.textContent = "Выйти";
-      logout.onclick = () => location.href = AUTH + "/logout";
+  <div class="modal-backdrop" id="settingsModal" hidden>
+    <section class="modal settings-modal">
+      <button class="modal-close" data-close="settingsModal" aria-label="Закрыть">×</button>
+      <div class="eyebrow">ПЕРСОНАЛИЗАЦИЯ</div><h2>Настройки</h2>
+      <label>Тема оформления<select id="themeSelect"><option value="dark">Ночная</option><option value="light">Светлая</option><option value="violet">Фиолетовая</option><option value="ocean">Океан</option></select></label>
+      <label>Язык интерфейса<select id="languageSelect"><option value="ru">Русский</option><option value="en">English (частично)</option></select></label>
+      <p class="muted small">Настройки и личные списки хранятся локально в браузере.</p>
+      <button class="button primary" id="closeSettings">Готово</button>
+    </section>
+  </div>
 
-      authArea.append(label, logout);
-      $("authStatus").textContent = "Вы вошли";
-    } catch (error) {
-      $("authStatus").textContent = "Каталог доступен";
-      console.error("Ошибка проверки входа", error);
-    }
-  }
-
-  const movies = [
-    {id:1,title:"Интерстеллар",year:2014,genre:"Фантастика",rating:8.6,emoji:"🌌"},
-    {id:2,title:"Начало",year:2010,genre:"Фантастика",rating:8.4,emoji:"🌀"},
-    {id:3,title:"Побег из Шоушенка",year:1994,genre:"Драма",rating:9.1,emoji:"🔑"},
-    {id:4,title:"Властелин колец",year:2001,genre:"Фэнтези",rating:8.8,emoji:"💍"},
-    {id:5,title:"ВАЛЛ-И",year:2008,genre:"Анимация",rating:8.4,emoji:"🤖"},
-    {id:6,title:"Пираты Карибского моря",year:2003,genre:"Приключения",rating:8.0,emoji:"🏴‍☠️"},
-    {id:7,title:"1+1",year:2011,genre:"Комедия",rating:8.8,emoji:"🎭"},
-    {id:8,title:"Тайна Коко",year:2017,genre:"Анимация",rating:8.7,emoji:"🎸"}
-  ];
-
-  const getSet = key => {
-    try { return new Set(JSON.parse(localStorage.getItem(key) || "[]")); }
-    catch { return new Set(); }
-  };
-
-  const favorites = getSet("kp_favorites");
-  const watched = getSet("kp_watched");
-  let activeFilter = "all";
-  let currentAnswer = null;
-  let hearts = 5;
-
-  function saveLists() {
-    localStorage.setItem("kp_favorites", JSON.stringify([...favorites]));
-    localStorage.setItem("kp_watched", JSON.stringify([...watched]));
-    $("collectionSummary").textContent =
-      `Избранное: ${favorites.size} · Просмотрено: ${watched.size}`;
-  }
-
-  function renderMovies() {
-    const query = $("searchInput").value.trim().toLocaleLowerCase("ru");
-    const genre = $("genreSelect").value;
-    const year = $("yearSelect").value;
-    const sort = $("sortSelect").value;
-
-    let list = movies.filter(movie =>
-      movie.title.toLocaleLowerCase("ru").includes(query) &&
-      (!genre || movie.genre === genre) &&
-      (!year || String(movie.year) === year) &&
-      (activeFilter === "all" ||
-       (activeFilter === "favorites" && favorites.has(movie.id)) ||
-       (activeFilter === "watched" && watched.has(movie.id)))
-    );
-
-    list.sort((a,b) =>
-      sort === "rating" ? b.rating-a.rating :
-      sort === "year" ? b.year-a.year :
-      a.title.localeCompare(b.title, "ru")
-    );
-
-    $("resultCount").textContent = `Фильмов: ${list.length}`;
-    const grid = $("movieGrid");
-    grid.replaceChildren();
-
-    if (!list.length) {
-      grid.innerHTML = '<div class="empty">Ничего не найдено. Попробуй изменить фильтры.</div>';
-      return;
-    }
-
-    list.forEach(movie => {
-      const card = document.createElement("article");
-      card.className = "movie-card";
-
-      const poster = document.createElement("div");
-      poster.className = "movie-poster";
-      poster.textContent = movie.emoji;
-
-      const info = document.createElement("div");
-      info.className = "movie-info";
-
-      const title = document.createElement("h3");
-      title.textContent = movie.title;
-
-      const description = document.createElement("p");
-      description.textContent = `${movie.year} · ${movie.genre} · ★ ${movie.rating}`;
-
-      const actions = document.createElement("div");
-      actions.className = "movie-actions";
-
-      const fav = document.createElement("button");
-      fav.className = "button";
-      fav.textContent = favorites.has(movie.id) ? "♥" : "♡";
-      fav.setAttribute("aria-label", "Избранное");
-      fav.onclick = () => {
-        favorites.has(movie.id) ? favorites.delete(movie.id) : favorites.add(movie.id);
-        saveLists();
-        renderMovies();
-      };
-
-      const seen = document.createElement("button");
-      seen.className = "button";
-      seen.textContent = watched.has(movie.id) ? "✓ Смотрел" : "Отметить";
-      seen.onclick = () => {
-        watched.has(movie.id) ? watched.delete(movie.id) : watched.add(movie.id);
-        saveLists();
-        renderMovies();
-      };
-
-      actions.append(fav, seen);
-      info.append(title, description, actions);
-      card.append(poster, info);
-      grid.appendChild(card);
-    });
-  }
-
-  movies.forEach(movie => {
-    const option = document.createElement("option");
-    option.value = String(movie.year);
-    option.textContent = String(movie.year);
-    $("yearSelect").appendChild(option);
-  });
-
-  ["searchInput","genreSelect","yearSelect","sortSelect"].forEach(id =>
-    $(id).addEventListener(id === "searchInput" ? "input" : "change", renderMovies)
-  );
-
-  document.querySelectorAll("[data-filter]").forEach(button => {
-    button.addEventListener("click", () => {
-      activeFilter = button.dataset.filter;
-      document.querySelectorAll("[data-filter]").forEach(item =>
-        item.classList.toggle("active", item === button)
-      );
-      renderMovies();
-    });
-  });
-
-  $("surpriseBtn").onclick = () => {
-    const movie = movies[Math.floor(Math.random() * movies.length)];
-    alert(`Сегодня посмотри: ${movie.title} (${movie.year})`);
-  };
-
-  $("startGame").onclick = () => {
-    hearts = 5;
-    $("hearts").textContent = "♥ ♥ ♥ ♥ ♥";
-    currentAnswer = movies[Math.floor(Math.random() * movies.length)];
-    $("gamePrompt").textContent =
-      `Подсказка: жанр — ${currentAnswer.genre}, год — ${currentAnswer.year}. Как называется фильм?`;
-    $("gameFrame").alt = `Подсказка к фильму ${currentAnswer.title}`;
-    $("gameFrame").src =
-      "data:image/svg+xml;charset=UTF-8," +
-      encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="100%" height="100%" fill="#191f2e"/><text x="50%" y="45%" fill="#e9c46a" font-size="68" text-anchor="middle">${currentAnswer.emoji}</text><text x="50%" y="70%" fill="#f5f5fa" font-size="22" text-anchor="middle">УГАДАЙ ФИЛЬМ</text></svg>`);
-    $("gameFeedback").textContent = "";
-    $("guessInput").value = "";
-  };
-
-  $("submitGuess").onclick = () => {
-    if (!currentAnswer) {
-      $("gameFeedback").textContent = "Сначала начни раунд.";
-      return;
-    }
-
-    const guess = $("guessInput").value.trim().toLocaleLowerCase("ru");
-
-    if (guess === currentAnswer.title.toLocaleLowerCase("ru")) {
-      $("gameFeedback").textContent = "Верно! Отличное знание кино 🎉";
-      currentAnswer = null;
-    } else {
-      hearts = Math.max(0, hearts - 1);
-      $("hearts").textContent = "♥ ".repeat(hearts).trim() || "Сердца закончились";
-      $("gameFeedback").textContent = hearts
-        ? "Не угадал. Попробуй ещё раз!"
-        : `Раунд завершён. Ответ: ${currentAnswer.title}`;
-      if (!hearts) currentAnswer = null;
-    }
-  };
-
-  $("guessInput").addEventListener("keydown", event => {
-    if (event.key === "Enter") $("submitGuess").click();
-  });
-
-  const params = new URLSearchParams(location.search);
-  if (params.get("login") === "success") {
-    history.replaceState({}, "", location.pathname);
-  }
-
-  renderMovies();
-  saveLists();
-  checkAuth();
-})();
-</script>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
 </body>
 </html>
