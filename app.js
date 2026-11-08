@@ -1112,3 +1112,82 @@ function init() {
 }
 
 init();
+
+/* Навигация между отдельными страницами */
+(() => {
+  const pages = [
+    { id: "home", title: "Что посмотрим сегодня?" },
+    { id: "catalog", title: "Каталог фильмов" },
+    { id: "game", title: "Киновызов" },
+    { id: "records", title: "Таблица рекордов" },
+    { id: "profile", title: "Мой профиль" }
+  ];
+
+  const sections = pages
+    .map(page => ({
+      ...page,
+      element: document.getElementById(page.id)
+    }))
+    .filter(page => page.element);
+
+  function showPage(id, updateHash = true) {
+    const selected = sections.find(page => page.id === id);
+    if (!selected) return;
+
+    sections.forEach(page => {
+      page.element.classList.toggle("page-active", page.id === id);
+    });
+
+    document.querySelectorAll(".side-nav .nav-link").forEach(link => {
+      const active = link.getAttribute("href") === `#${id}`;
+      link.classList.toggle("active", active);
+
+      if (active) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+
+    document.querySelectorAll(".mobile-nav a").forEach(link => {
+      const active = link.getAttribute("href") === `#${id}`;
+      link.classList.toggle("active", active);
+
+      if (active) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+
+    const title = document.getElementById("welcomeTitle");
+    if (title) title.textContent = selected.title;
+
+    if (updateHash && location.hash !== `#${id}`) {
+      history.pushState(null, "", `#${id}`);
+    }
+
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  document.addEventListener("click", event => {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) return;
+
+    const id = link.getAttribute("href").slice(1);
+    if (!sections.some(page => page.id === id)) return;
+
+    event.preventDefault();
+    showPage(id);
+  });
+
+  window.addEventListener("popstate", () => {
+    showPage(location.hash.slice(1) || "home", false);
+  });
+
+  window.addEventListener("hashchange", () => {
+    showPage(location.hash.slice(1) || "home", false);
+  });
+
+  showPage(location.hash.slice(1) || "home", false);
+})();
