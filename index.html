@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b12"><meta name="description" content="КиноПодбор — найди фильм под настроение">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
+<title>КиноПодбор</title>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar"><a class="brand" href="#home" aria-label="КиноПодбор"><span class="brand-mark">К</span><span>КИНО<span class="muted">ПОДБОР</span></span></a><div class="top-actions"><label class="language-picker" aria-label="Язык">🌐 <select id="languageSelect"><option value="ru">RU</option><option value="en">EN</option></select></label><span class="status"><i></i><span id="connectionLabel">ДЕМО-КАТАЛОГ</span></span><button class="icon-btn" id="settingsOpen" aria-label="Настройки">⚙</button></div></header>
+<main>
+<section class="hero" id="home"><div class="hero-copy"><div class="eyebrow"><span class="spark">✦</span> ТВОЙ ВЕЧЕР. ТВОЁ КИНО.</div><h1>Найди фильм,<br><em>который зацепит.</em></h1><p>Подборки, рейтинги и немного кинематографической магии.</p><div class="hero-actions"><button class="primary" id="surpriseBtn">✦ Удиви меня</button><button class="secondary" id="browseBtn">Открыть каталог <span>↗</span></button></div></div><div class="hero-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="hero-disc">КИНО<br><b>ВЕЧЕР</b><small>ВЫБИРАЙ С УДОВОЛЬСТВИЕМ</small></div><span class="float-tag tag-a">✦ 7-й вид искусства</span><span class="float-tag tag-b">ПОРА СМОТРЕТЬ</span></div></section>
+<section class="game-section" id="game">
+<div class="section-head"><div><div class="eyebrow">КИНОВЫЗОВ</div><h2>Угадай фильм по кадру</h2></div><span class="count">5 сердец на каждый раунд</span></div>
+<div class="game-intro" id="gameSetup">
+<div class="game-intro-copy"><div class="game-kicker">🎬 РЕЖИМ «УГАДАЙ КАДР»</div><h3>Проверь, насколько хорошо ты знаешь кино</h3><p>Угадывай фильмы и мультфильмы по настоящим кадрам. Подсказки помогают, но каждая стоит одного сердца.</p></div>
+<div class="game-options">
+<label for="playerName"><span>Игрок</span><input id="playerName" maxlength="18" placeholder="Твоё имя" value="Игрок"></label>
+<label for="roundCount"><span>Количество раундов</span><select id="roundCount"><option value="5">5 фильмов</option><option value="10" selected>10 фильмов</option><option value="15">15 фильмов</option><option value="20">20 фильмов</option></select></label>
+<label for="gameKind"><span>Что угадываем</span><select id="gameKind"><option value="mixed">Фильмы и мультфильмы</option><option value="movie">Только фильмы</option><option value="cartoon">Только мультфильмы</option></select></label>
+<label for="gameDifficulty"><span>Сложность</span><select id="gameDifficulty"><option value="easy">Лёгкая</option><option value="medium" selected>Средняя</option><option value="hard">Сложная</option></select></label>
+<button class="primary game-start" id="startGame">Начать игру <span>→</span></button>
+</div></div>
+<div class="game-play" id="gamePlay" hidden>
+<div class="game-topline"><span id="roundLabel">РАУНД 1 / 10</span><span id="gameTimer">00:00</span><span class="hearts" id="heartBar">♥ ♥ ♥ ♥ ♥</span></div>
+<div class="game-frame-wrap"><img id="gameFrame" alt="Кадр из фильма"><div class="frame-overlay" id="frameOverlay">Угадай, что это за фильм</div></div>
+<div class="game-hints"><button class="hint-btn" data-hint="frame">↻ Другой кадр <small>−1 ♥</small></button><button class="hint-btn" data-hint="year">◷ Год выхода <small>−1 ♥</small></button><button class="hint-btn" data-hint="letter">А Первая буква <small>−1 ♥</small></button><button class="hint-btn" data-hint="genre">▤ Жанр <small>−1 ♥</small></button></div>
+<div class="game-answer"><input id="guessInput" autocomplete="off" placeholder="Введи название фильма..."><button class="primary" id="submitGuess">Ответить</button></div><div class="game-feedback" id="gameFeedback" aria-live="polite"></div>
+<button class="secondary game-next" id="nextRound" hidden>Следующий раунд →</button>
+</div>
+<div class="game-results" id="gameResults" hidden></div>
+</div>
+<div class="leaderboard"><div class="leaderboard-head"><div><div class="eyebrow">ЛУЧШИЕ РЕЗУЛЬТАТЫ</div><h3>Таблица рекордов</h3></div><span>Локальный рейтинг</span></div><div id="leaderboardList" class="leaderboard-list"></div></div>
+</section>
+<section class="section" id="catalog"><div class="section-head"><div><div class="eyebrow">КОЛЛЕКЦИЯ</div><h2>Исследуй кино</h2></div><span class="count" id="resultCount">Подборка фильмов</span></div>
+<div class="toolbar"><label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="Название фильма..." autocomplete="off"></label><select id="genreSelect" aria-label="Жанр"><option value="">Все жанры</option></select><select id="yearSelect" aria-label="Год"><option value="">Любой год</option></select><select id="sortSelect" aria-label="Сортировка"><option value="popularity.desc">По популярности</option><option value="vote_average.desc">По рейтингу</option><option value="release_date.desc">Сначала новые</option><option value="release_date.asc">Сначала старые</option></select></div>
+<div class="chips" id="quickFilters"><button class="chip active" data-filter="all">Все фильмы</button><button class="chip" data-filter="favorites">♥ Избранное</button><button class="chip" data-filter="watched">✓ Просмотренные</button></div>
+<div class="movie-grid" id="movieGrid"><div class="loading">Загружаем кино...</div></div><div class="load-more-wrap"><button class="secondary" id="loadMore">Показать ещё</button></div>
+</section>
+<section class="quote-strip"><span>“</span><p>В кино можно прожить тысячу жизней,<br>не проживая ни одной.</p><small>ТВОЯ СЛЕДУЮЩАЯ ИСТОРИЯ ЖДЁТ</small></section>
+</main>
+<footer><span>КИНОПОДБОР <b>© 2026</b></span><span>СОЗДАНО ДЛЯ ХОРОШЕГО КИНО</span></footer>
+</div>
+<nav class="mobile-nav"><a class="nav-active" href="#home">⌂<small>Главная</small></a><a href="#catalog">▦<small>Каталог</small></a><a href="#game">🎬<small>Игра</small></a><button id="navSurprise">✦<small>Сюрприз</small></button><button id="navFavorites">♡<small>Избранное</small></button></nav>
+<div class="modal-backdrop" id="movieModal"><section class="modal movie-modal"><button class="close-btn" data-close="movieModal">×</button><div id="movieDetails"></div></section></div>
+<div class="modal-backdrop" id="settingsModal"><section class="modal settings-modal"><button class="close-btn" data-close="settingsModal">×</button><div class="eyebrow">ПОДКЛЮЧЕНИЕ</div><h2>Настройки каталога</h2><p class="muted-text">Для загрузки фильмов укажи адрес защищённого Cloudflare Worker. Секретный токен хранится в Cloudflare, а не в приложении.</p><label class="field-label" for="apiKeyInput">Адрес Cloudflare Worker</label><input class="text-field" id="apiKeyInput" type="password" placeholder="https://kinopodbor-api.ТВОЙ-АККАУНТ.workers.dev"><label class="field-label" for="settingsLanguage">Язык приложения</label><select class="text-field" id="settingsLanguage"><option value="ru">Русский</option><option value="en">English</option></select><div class="settings-help">Не вставляй сюда секретный токен Kinopoisk.dev. Вставляется только публичный адрес Worker после его публикации.</div><div class="settings-actions"><button class="secondary" id="clearKey">Сбросить</button><button class="primary" id="saveKey">Сохранить</button></div><div class="privacy-note">Избранное, просмотренное и отзывы сохраняются локально в этом браузере. Регистрация и облачная синхронизация пока не подключены.</div></section></div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body></html>
