@@ -1,52 +1,516 @@
-const $=s=>document.querySelector(s);const state={apiUrl:localStorage.getItem('kp_worker_url')||'',page:1,genre:'',year:'',sort:'popularity.desc',query:'',quick:'all',movies:[],genres:[],selected:null};
-const demo=[
-{id:1,title:'Начало',release_date:'2010-07-15',vote_average:8.4,overview:'Профессиональный вор Доминик Кобб проникает в сны людей и похищает секреты из глубин подсознания. Теперь ему предстоит выполнить почти невозможную задачу — внедрить идею.',poster_path:'',genre_ids:[878,28,12],backdrop_path:''},
-{id:2,title:'Интерстеллар',release_date:'2014-11-05',vote_average:8.7,overview:'Когда Земля становится непригодной для жизни, группа исследователей отправляется за пределы нашей галактики, чтобы найти человечеству новый дом.',poster_path:'',genre_ids:[12,18,878]},
-{id:3,title:'Побег из Шоушенка',release_date:'1994-09-23',vote_average:8.7,overview:'История Энди Дюфрейна, банкира, несправедливо осуждённого на пожизненное заключение, который не теряет надежды даже за стенами тюрьмы.',genre_ids:[18,80]},
-{id:4,title:'Зелёная миля',release_date:'1999-12-10',vote_average:8.5,overview:'В блоке смертников появляется необычный заключённый, обладающий удивительным даром. Его присутствие меняет жизни окружающих.',genre_ids:[14,18,80]},
-{id:5,title:'Матрица',release_date:'1999-03-30',vote_average:8.2,overview:'Хакер Нео узнаёт, что привычная реальность — лишь сложная иллюзия, созданная машинами.',genre_ids:[28,878]},
-{id:6,title:'Остров проклятых',release_date:'2010-02-14',vote_average:8.2,overview:'Два федеральных маршала расследуют исчезновение пациентки в психиатрической клинике на отдалённом острове.',genre_ids:[18,53,9648]},
-{id:7,title:'Джентльмены',release_date:'2019-12-03',vote_average:7.8,overview:'Американский предприниматель в Лондоне решает продать свою империю по выращиванию марихуаны, запуская цепь неожиданных событий.',genre_ids:[35,80]},
-{id:8,title:'Дюна',release_date:'2021-09-15',vote_average:7.8,overview:'Пол Атрейдес отправляется на опасную планету Арракис, где находится самое ценное вещество во Вселенной.',genre_ids:[878,12]},
-{id:9,title:'Одержимость',release_date:'2014-10-10',vote_average:8.4,overview:'Молодой барабанщик поступает в лучшую музыкальную школу и сталкивается с безжалостным преподавателем.',genre_ids:[18,10402]},
-{id:10,title:'Паразиты',release_date:'2019-05-30',vote_average:8.5,overview:'Бедная семья постепенно внедряется в жизнь богатого дома, но тщательно выстроенный план выходит из-под контроля.',genre_ids:[35,53,18]},
-{id:11,title:'Назад в будущее',release_date:'1985-07-03',vote_average:8.3,overview:'Подросток случайно отправляется в прошлое на машине времени и должен помочь своим родителям встретиться.',genre_ids:[12,35,878]},
-{id:12,title:'Грань будущего',release_date:'2014-05-27',vote_average:7.9,overview:'Во время войны с инопланетной расой офицер оказывается во временной петле и получает шанс изменить ход битвы.',genre_ids:[28,878]}
-];
-const genreNames={28:'Боевик',12:'Приключения',16:'Мультфильм',35:'Комедия',80:'Криминал',99:'Документальный',18:'Драма',10751:'Семейный',14:'Фэнтези',36:'История',27:'Ужасы',10402:'Музыка',9648:'Детектив',10749:'Мелодрама',878:'Фантастика',10770:'ТВ-фильм',53:'Триллер',10752:'Военный',37:'Вестерн'};
-function poster(m){return m.poster_path?(m.poster_path.startsWith('http')?m.poster_path:`https://image.tmdb.org/t/p/w500${m.poster_path}`):''}function year(m){return (m.release_date||'').slice(0,4)||'—'}function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2300)}function saved(k){return JSON.parse(localStorage.getItem(k)||'[]')}function store(k,v){localStorage.setItem(k,JSON.stringify(v))}
-async function api(path){if(!state.apiUrl)throw Error('Не указан адрес защищённого API');const r=await fetch(state.apiUrl.replace(/\/$/,'')+path,{headers:{accept:'application/json'}});if(!r.ok)throw Error('Kinopoisk API '+r.status);return r.json()}
-async function load(){const grid=$('#movieGrid');grid.innerHTML='<div class="loading">Подбираем фильмы...</div>';state.page=1;try{if(state.apiUrl){let q=state.query?`/search/movie?query=${encodeURIComponent(state.query)}&language=ru-RU&page=${state.page}`:`/discover/movie?include_adult=false&language=ru-RU&page=${state.page}&sort_by=${state.sort}&vote_count.gte=100${state.genre?'&with_genres='+state.genre:''}${state.year?'&primary_release_year='+state.year:''}`;const data=await api(q);state.movies=data.results||[];$('#connectionLabel').textContent='КИНОПОИСК • ONLINE';if(!state.genres.length){const g=await api('/genre/movie/list?language=ru-RU');state.genres=g.genres||[];fillGenres()}}else{state.movies=demo.filter(m=>(!state.query||m.title.toLowerCase().includes(state.query.toLowerCase()))&&(!state.genre||m.genre_ids.includes(+state.genre))&&(!state.year||year(m)===state.year));if(state.sort==='vote_average.desc')state.movies.sort((a,b)=>b.vote_average-a.vote_average);if(state.sort==='release_date.desc')state.movies.sort((a,b)=>year(b).localeCompare(year(a)));if(state.sort==='release_date.asc')state.movies.sort((a,b)=>year(a).localeCompare(year(b)));$('#connectionLabel').textContent='ДЕМО-КАТАЛОГ';if(!state.genres.length){state.genres=Object.entries(genreNames).map(([id,name])=>({id:+id,name}));fillGenres()}}render()}catch(e){grid.innerHTML='<div class="empty">Не удалось загрузить каталог. Проверь интернет и TMDB-токен в настройках.</div>';$('#connectionLabel').textContent='НЕТ СОЕДИНЕНИЯ';console.error(e)}}
-function fillGenres(){const s=$('#genreSelect');s.innerHTML='<option value="">Все жанры</option>'+state.genres.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');const y=$('#yearSelect');let years=Array.from({length:2026-1970+1},(_,i)=>String(2026-i));y.innerHTML='<option value="">Любой год</option>'+years.map(v=>`<option>${v}</option>`).join('')}
-function render(){let list=state.movies;if(state.quick==='favorites')list=list.filter(m=>saved('kp_favs').includes(m.id));if(state.quick==='watched')list=list.filter(m=>saved('kp_watched').includes(m.id));$('#resultCount').textContent=`${list.length} ${list.length===1?'фильм':list.length<5?'фильма':'фильмов'}`;$('#movieGrid').innerHTML=list.length?list.map(m=>{const fav=saved('kp_favs').includes(m.id);return `<article class="movie-card" data-id="${m.id}"><div class="poster-wrap">${poster(m)?`<img loading="lazy" src="${poster(m)}" alt="Постер ${esc(m.title)}">`:'<div class="poster-placeholder">КИНО</div>'}<span class="rating">★ ${Number(m.vote_average||0).toFixed(1)}</span><button class="fav-btn ${fav?'active':''}" data-fav="${m.id}" aria-label="В избранное">${fav?'♥':'♡'}</button></div><div class="movie-title">${esc(m.title||m.name||'Без названия')}</div><div class="movie-meta">${year(m)} · ${(m.genre_ids||[]).slice(0,2).map(id=>genreNames[id]||state.genres.find(g=>g.id===id)?.name).filter(Boolean).join(', ')||'Фильм'}</div></article>`}).join(''):'<div class="empty">Здесь пока пусто. Выбери другой фильтр или добавь фильмы в избранное.</div>';$('#loadMore').style.display=state.apiUrl&&state.quick==='all'?'inline-block':'none'}function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function openMovie(id){const m=state.movies.find(x=>x.id===id)||state.selected;if(!m)return;state.selected=m;const watched=saved('kp_watched').includes(id),fav=saved('kp_favs').includes(id);$('#movieDetails').innerHTML=`<div class="detail-layout">${poster(m)?`<img src="${poster(m)}" alt="Постер">`:'<div class="poster-wrap"><div class="poster-placeholder">КИНО</div></div>'}<div class="detail-copy"><div class="eyebrow">ВЫБОР РЕДАКЦИИ · КИНОПОДБОР</div><h2>${esc(m.title||m.name)}</h2><div class="detail-meta">★ ${Number(m.vote_average||0).toFixed(1)} / 10 &nbsp; · &nbsp; ${year(m)}</div><p class="detail-overview">${esc(m.overview||'Описание пока недоступно.')}</p><div class="detail-actions"><button class="primary" id="detailFav">${fav?'♥ В избранном':'♡ В избранное'}</button><button class="secondary" id="detailWatched">${watched?'✓ Просмотрено':'Отметить просмотренным'}</button><a class="secondary" style="text-decoration:none" target="_blank" rel="noreferrer" href="https://www.kinopoisk.ru/index.php?kp_query=${encodeURIComponent(m.title||m.name)}">Найти в Кинопоиске ↗</a></div></div></div><div class="review-box"><b>Твоя оценка</b><br><select id="reviewRating"><option value="">Поставить оценку</option>${[10,9,8,7,6,5,4,3,2,1].map(n=>`<option value="${n}">${n} / 10</option>`).join('')}</select><textarea id="reviewText" placeholder="Поделись впечатлением (необязательно)..."></textarea><button class="primary" id="saveReview">Сохранить отзыв</button></div>`;$('#movieModal').classList.add('open');$('#detailFav').onclick=()=>{toggle('kp_favs',id);openMovie(id);render()};$('#detailWatched').onclick=()=>{toggle('kp_watched',id);openMovie(id);render()};$('#saveReview').onclick=()=>{const rating=$('#reviewRating').value;if(!rating){toast('Сначала выбери оценку');return}const reviews=saved('kp_reviews');reviews.push({id,rating:+rating,text:$('#reviewText').value,date:new Date().toISOString()});store('kp_reviews',reviews);toast('Оценка сохранена на устройстве')}}function toggle(k,id){let a=saved(k);a=a.includes(id)?a.filter(x=>x!==id):[...a,id];store(k,a);toast(k==='kp_favs'?'Избранное обновлено':'Список просмотренного обновлён')}
-function surprise(){let pool=state.movies.filter(m=>!saved('kp_watched').includes(m.id));if(!pool.length)pool=state.movies;if(!pool.length){toast('Сначала загрузи каталог');return}openMovie(pool[Math.floor(Math.random()*pool.length)].id)}
-$('#movieGrid').addEventListener('click',e=>{const f=e.target.closest('[data-fav]');if(f){e.stopPropagation();toggle('kp_favs',+f.dataset.fav);render();return}const c=e.target.closest('[data-id]');if(c)openMovie(+c.dataset.id)});$('#searchInput').addEventListener('input',debounce(e=>{state.query=e.target.value;load()},450));$('#genreSelect').onchange=e=>{state.genre=e.target.value;load()};$('#yearSelect').onchange=e=>{state.year=e.target.value;load()};$('#sortSelect').onchange=e=>{state.sort=e.target.value;load()};$('#quickFilters').onclick=e=>{const b=e.target.closest('[data-filter]');if(!b)return;state.quick=b.dataset.filter;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active',x===b));render()};$('#surpriseBtn').onclick=$('#navSurprise').onclick=surprise;$('#browseBtn').onclick=()=>$('#catalog').scrollIntoView();$('#navFavorites').onclick=()=>{state.quick='favorites';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active',x.dataset.filter==='favorites'));$('#catalog').scrollIntoView();render()};$('#settingsOpen').onclick=()=>{$('#apiKeyInput').value=state.apiUrl;$('#settingsModal').classList.add('open')};$('#saveKey').onclick=()=>{state.apiUrl=$('#apiKeyInput').value.trim().replace(/\/$/,'');localStorage.setItem('kp_worker_url',state.apiUrl);$('#settingsModal').classList.remove('open');state.genres=[];load();toast('Адрес API сохранён')};$('#clearKey').onclick=()=>{$('#apiKeyInput').value='';state.apiUrl='';localStorage.removeItem('kp_worker_url');$('#settingsModal').classList.remove('open');state.genres=[];load();toast('Включён демо-каталог')};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('open'));document.querySelectorAll('.modal-backdrop').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)b.classList.remove('open')}));$('#loadMore').onclick=async()=>{try{state.page++;const q=state.query?`/search/movie?query=${encodeURIComponent(state.query)}&language=ru-RU&page=${state.page}`:`/discover/movie?include_adult=false&language=ru-RU&page=${state.page}&sort_by=${state.sort}&vote_count.gte=100${state.genre?'&with_genres='+state.genre:''}${state.year?'&primary_release_year='+state.year:''}`;const d=await api(q);state.movies.push(...(d.results||[]));render()}catch(e){toast('Не удалось загрузить следующую страницу')}};function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
-if('serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));load();
 
-// --- Язык интерфейса ---
-const translations={
- ru:{home:'Главная',catalog:'Исследуй кино',heroEyebrow:'✦ ТВОЙ ВЕЧЕР. ТВОЁ КИНО.',heroTitle:'Найди фильм,',heroEm:'который зацепит.',surprise:'✦ Удиви меня',browse:'Открыть каталог ↗',homeNav:'Главная',catalogNav:'Каталог',gameNav:'Игра',favoritesNav:'Избранное',heroParagraph:'Подборки, рейтинги и немного кинематографической магии.',searchPlaceholder:'Название фильма...',allGenres:'Все жанры',anyYear:'Любой год',sortPopularity:'По популярности',sortRating:'По рейтингу',sortNewest:'Сначала новые',sortOldest:'Сначала старые',allMovies:'Все фильмы',favorites:'♥ Избранное',watched:'✓ Просмотренные',loadMore:'Показать ещё',settingsTitle:'Настройки каталога',settingsEyebrow:'ПОДКЛЮЧЕНИЕ',settingsDescription:'Для загрузки фильмов укажи адрес защищённого Cloudflare Worker. Секретный токен хранится в Cloudflare, а не в приложении.',workerLabel:'Адрес Cloudflare Worker',save:'Сохранить',clear:'Сбросить',collection:'КОЛЛЕКЦИЯ',heroTitle:'Найди фильм,',heroEm:'который зацепит.',heroText:'Подборки, рейтинги и немного кинематографической магии.',surprise:'✦ Удиви меня',browse:'Открыть каталог ↗',gameTitle:'Угадай фильм по кадру',gameKicker:'🎬 РЕЖИМ «УГАДАЙ КАДР»',gameIntro:'Проверь, насколько хорошо ты знаешь кино',gameDesc:'Угадывай фильмы и мультфильмы по настоящим кадрам. Подсказки помогают, но каждая стоит одного сердца.',player:'Игрок',playerPlaceholder:'Твоё имя',rounds:'Количество раундов',films:'фильмов',kind:'Что угадываем',mixed:'Фильмы и мультфильмы',movies:'Только фильмы',cartoons:'Только мультфильмы',difficulty:'Сложность',easy:'Лёгкая',medium:'Средняя',hard:'Сложная',start:'Начать игру →',round:'РАУНД',otherFrame:'↻ Другой кадр',yearHint:'◷ Год выхода',letterHint:'А Первая буква',genreHint:'▤ Жанр',cost:'−1 ♥',answerPlaceholder:'Введи название фильма...',submit:'Ответить',next:'Следующий раунд →',leaderboard:'Таблица рекордов',best:'ЛУЧШИЕ РЕЗУЛЬТАТЫ',local:'Локальный рейтинг',noRecords:'Пока нет рекордов. Сыграй первую партию!',setupRequired:'Для игры подключи и опубликуй обновлённый Worker с поддержкой кадров.',loading:'Ищем кадры из кино...',noFrames:'Не удалось найти кадры. Попробуй ещё раз или проверь API.',correct:'Верно! Отличное знание кино.',wrong:'Не угадал. Попробуй ещё раз.',outOfHearts:'Сердца закончились. Правильный ответ:',time:'Время',score:'Очки',guessed:'Угадано',finished:'Игра завершена!',hintNoFrames:'Других кадров для этого фильма нет.',hintUsed:'Подсказка открыта.',alreadyHint:'Эта подсказка уже использована.',gameOver:'Раунд завершён.',yearLabel:'Год',letterLabel:'Первая буква',genreLabel:'Жанр'},
- en:{home:'Home',catalog:'Explore movies',heroEyebrow:'✦ YOUR EVENING. YOUR MOVIE.',heroTitle:'Find a movie,',heroEm:'that moves you.',surprise:'✦ Surprise me',browse:'Browse catalogue ↗',homeNav:'Home',catalogNav:'Catalogue',gameNav:'Game',favoritesNav:'Favourites',heroParagraph:'Collections, ratings and a little cinematic magic.',searchPlaceholder:'Movie title...',allGenres:'All genres',anyYear:'Any year',sortPopularity:'Most popular',sortRating:'Top rated',sortNewest:'Newest first',sortOldest:'Oldest first',allMovies:'All movies',favorites:'♥ Favorites',watched:'✓ Watched',loadMore:'Load more',settingsTitle:'Catalogue settings',settingsEyebrow:'CONNECTION',settingsDescription:'To load movies, enter your protected Cloudflare Worker URL. The secret token is stored in Cloudflare, not in the app.',workerLabel:'Cloudflare Worker URL',save:'Save',clear:'Reset',collection:'COLLECTION',heroTitle:'Find a movie,',heroEm:'that moves you.',heroText:'Collections, ratings and a little cinematic magic.',surprise:'✦ Surprise me',browse:'Browse catalogue ↗',gameTitle:'Guess the movie from a frame',gameKicker:'🎬 FRAME GUESS CHALLENGE',gameIntro:'How well do you really know movies?',gameDesc:'Guess movies and animated films from real stills. Hints help, but each one costs a heart.',player:'Player',playerPlaceholder:'Your name',rounds:'Number of rounds',films:'movies',kind:'What to guess',mixed:'Movies & animation',movies:'Movies only',cartoons:'Animated only',difficulty:'Difficulty',easy:'Easy',medium:'Medium',hard:'Hard',start:'Start game →',round:'ROUND',otherFrame:'↻ Change frame',yearHint:'◷ Release year',letterHint:'A First letter',genreHint:'▤ Genre',cost:'−1 ♥',answerPlaceholder:'Enter the movie title...',submit:'Guess',next:'Next round →',leaderboard:'Leaderboard',best:'TOP SCORES',local:'Local ranking',noRecords:'No records yet. Play your first game!',setupRequired:'Connect and deploy the updated Worker with frame support to play.',loading:'Finding movie stills...',noFrames:'Could not find stills. Try again or check the API.',correct:'Correct! Great movie knowledge.',wrong:'Not quite. Try again.',outOfHearts:'No hearts left. Correct answer:',time:'Time',score:'Points',guessed:'Guessed',finished:'Game complete!',hintNoFrames:'No more stills for this movie.',hintUsed:'Hint revealed.',alreadyHint:'You already used this hint.',gameOver:'Round complete.',yearLabel:'Year',letterLabel:'First letter',genreLabel:'Genre'}
+"use strict";
+
+const $ = id => document.getElementById(id);
+const API = "https://api.themoviedb.org/3";
+const IMAGE = "https://image.tmdb.org/t/p/w500";
+const AUTH = "https://kinopodbor-auth.2dnd99vgwk.workers.dev";
+
+const GENRES = {
+  28:"Боевик",12:"Приключения",16:"Мультфильм",35:"Комедия",
+  80:"Криминал",99:"Документальный",18:"Драма",10751:"Семейный",
+  14:"Фэнтези",36:"История",27:"Ужасы",10402:"Музыка",9648:"Детектив",
+  10749:"Мелодрама",878:"Фантастика",10770:"ТВ-фильм",53:"Триллер",
+  10752:"Военный",37:"Вестерн"
 };
-function setLanguage(lang){lang=translations[lang]?lang:'ru';localStorage.setItem('kp_language',lang);document.documentElement.lang=lang;$('#languageSelect').value=lang;$('#settingsLanguage').value=lang;const t=translations[lang];const set=(sel,v)=>{const e=$(sel);if(e)e.textContent=v};
-set('.hero .eyebrow',t.heroEyebrow);$('.hero h1').innerHTML=`${t.heroTitle}<br><em>${t.heroEm}</em>`;set('#surpriseBtn',t.surprise);set('#browseBtn',t.browse);set('.mobile-nav a[href="#home"] small',t.homeNav);set('.mobile-nav a[href="#catalog"] small',t.catalogNav);set('.mobile-nav a[href="#game"] small',t.gameNav);set('#navFavorites small',t.favoritesNav);const heroP=$('.hero-copy p');if(heroP)heroP.textContent=t.heroParagraph;$('#searchInput').placeholder=t.searchPlaceholder;$('#genreSelect').options[0].text=t.allGenres;$('#yearSelect').options[0].text=t.anyYear;$('#sortSelect').options[0].text=t.sortPopularity;$('#sortSelect').options[1].text=t.sortRating;$('#sortSelect').options[2].text=t.sortNewest;$('#sortSelect').options[3].text=t.sortOldest;const chips=document.querySelectorAll('#quickFilters .chip');if(chips[0])chips[0].textContent=t.allMovies;if(chips[1])chips[1].textContent=t.favorites;if(chips[2])chips[2].textContent=t.watched;set('#loadMore',t.loadMore);set('#settingsModal .eyebrow',t.settingsEyebrow);set('#settingsModal h2',t.settingsTitle);const desc=$('#settingsModal .muted-text');if(desc)desc.textContent=t.settingsDescription;const workerLabel=$('label[for="apiKeyInput"]');if(workerLabel)workerLabel.textContent=t.workerLabel;set('#saveKey',t.save);set('#clearKey',t.clear);set('#catalog .section-head h2',t.catalog);set('#catalog .section-head .eyebrow',t.collection);set('#game .section-head h2',t.gameTitle);set('.game-kicker',t.gameKicker);set('#gameSetup h3',t.gameIntro);set('#gameSetup p',t.gameDesc);set('label[for="playerName"] span',t.player);set('label[for="roundCount"] span',t.rounds);set('label[for="gameKind"] span',t.kind);set('label[for="gameDifficulty"] span',t.difficulty);set('#startGame',t.start);set('[data-hint="frame"]',t.otherFrame+' '+t.cost);set('[data-hint="year"]',t.yearHint+' '+t.cost);set('[data-hint="letter"]',t.letterHint+' '+t.cost);set('[data-hint="genre"]',t.genreHint+' '+t.cost);set('#submitGuess',t.submit);set('#nextRound',t.next);set('.leaderboard-head h3',t.leaderboard);set('.leaderboard-head span',t.local);$('#playerName').placeholder=t.playerPlaceholder;$('#guessInput').placeholder=t.answerPlaceholder;$('#gameKind').options[0].text=t.mixed;$('#gameKind').options[1].text=t.movies;$('#gameKind').options[2].text=t.cartoons;$('#gameDifficulty').options[0].text=t.easy;$('#gameDifficulty').options[1].text=t.medium;$('#gameDifficulty').options[2].text=t.hard;Array.from($('#roundCount').options).forEach(o=>o.text=`${o.value} ${t.films}`);renderLeaderboard();}
-$('#languageSelect').addEventListener('change',e=>setLanguage(e.target.value));$('#settingsLanguage').addEventListener('change',e=>setLanguage(e.target.value));
 
-// --- Игра «Угадай фильм по кадру» ---
-const game={items:[],index:0,hearts:5,score:0,correct:0,startedAt:0,timer:null,frameIndex:0,hints:new Set(),roundDone:false,rounds:10,player:'Игрок'};
-const gameText=()=>translations[localStorage.getItem('kp_language')||'ru'];
-function normalizeTitle(s){return String(s||'').toLocaleLowerCase().replace(/ё/g,'е').replace(/[«»"'’.,:!?()\-–—]/g,' ').replace(/\s+/g,' ').trim()}
-function elapsed(){const sec=Math.max(0,Math.floor((Date.now()-game.startedAt)/1000));return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`}
-function drawHearts(){const h=Array.from({length:5},(_,i)=>i<game.hearts?'♥':'♡').join(' ');$('#heartBar').textContent=h;$('#heartBar').classList.toggle('low',game.hearts<=2)}
-function showFrame(){const item=game.items[game.index];if(!item)return;const frames=item.frames||[];if(!frames.length){$('#gameFrame').removeAttribute('src');$('#frameOverlay').hidden=false;return}$('#gameFrame').src=frames[game.frameIndex%frames.length];$('#frameOverlay').hidden=true}
-function renderRound(){const item=game.items[game.index];game.hearts=5;game.frameIndex=0;game.hints=new Set();game.roundDone=false;drawHearts();showFrame();$('#roundLabel').textContent=`${gameText().round} ${game.index+1} / ${game.items.length}`;$('#gameFeedback').textContent='';$('#gameFeedback').className='game-feedback';$('#guessInput').value='';$('#guessInput').disabled=false;$('#submitGuess').disabled=false;$('#nextRound').hidden=true;document.querySelectorAll('.hint-btn').forEach(b=>b.disabled=false);$('#guessInput').focus()}
-async function startGame(){if(!state.apiUrl){toast(gameText().setupRequired);$('#settingsOpen').click();return}const count=+$('#roundCount').value,kind=$('#gameKind').value,difficulty=$('#gameDifficulty').value;$('#startGame').disabled=true;$('#startGame').textContent=gameText().loading;try{const data=await api(`/game/movies?count=${count}&kind=${kind}&difficulty=${difficulty}`);if(!Array.isArray(data.results)||data.results.length<count)throw Error('Недостаточно кадров');game.items=data.results;game.index=0;game.score=0;game.correct=0;game.startedAt=Date.now();game.rounds=count;game.player=$('#playerName').value.trim()||'Игрок';$('#gameSetup').hidden=true;$('#gameResults').hidden=true;$('#gamePlay').hidden=false;clearInterval(game.timer);game.timer=setInterval(()=>$('#gameTimer').textContent=elapsed(),1000);$('#gameTimer').textContent='00:00';renderRound()}catch(e){console.error(e);toast(gameText().noFrames)}finally{$('#startGame').disabled=false;$('#startGame').textContent=gameText().start}}
-function finishRound(correct){if(game.roundDone)return;game.roundDone=true;const item=game.items[game.index];if(correct){game.correct++;game.score+=100+game.hearts*10;$('#gameFeedback').textContent=gameText().correct;$('#gameFeedback').className='game-feedback success'}else{$('#gameFeedback').textContent=`${gameText().outOfHearts} ${item.title}`;$('#gameFeedback').className='game-feedback failure'}$('#guessInput').disabled=true;$('#submitGuess').disabled=true;document.querySelectorAll('.hint-btn').forEach(b=>b.disabled=true);$('#nextRound').hidden=false;$('#nextRound').textContent=game.index===game.items.length-1?(localStorage.getItem('kp_language')==='en'?'View results →':'Посмотреть результат →'):gameText().next}
-function submitGuess(){if(game.roundDone)return;const value=normalizeTitle($('#guessInput').value),item=game.items[game.index];if(!value){$('#guessInput').focus();return}const accepted=[item.title,item.alternativeName,...(item.aliases||[])].map(normalizeTitle).filter(Boolean);if(accepted.some(x=>x===value||x.includes(value)&&value.length>=5||value.includes(x)&&x.length>=5)){finishRound(true)}else{game.hearts=Math.max(0,game.hearts-1);drawHearts();$('#gameFeedback').textContent=gameText().wrong;$('#gameFeedback').className='game-feedback failure';if(!game.hearts)finishRound(false)}}
-function useHint(type){if(game.roundDone)return;const item=game.items[game.index],t=gameText();if(game.hints.has(type)){toast(t.alreadyHint);return}if(type==='frame'&&(item.frames||[]).length<2){toast(t.hintNoFrames);return}if(game.hearts<=0)return;game.hearts--;game.hints.add(type);drawHearts();const el=$('#gameFeedback');if(type==='frame'){game.frameIndex=(game.frameIndex+1)%(item.frames.length);showFrame();el.textContent=t.hintUsed}else if(type==='year'){el.textContent=`${t.yearLabel}: ${item.year||'—'}`}else if(type==='letter'){const title=item.title||'';el.textContent=`${t.letterLabel}: ${title.charAt(0).toLocaleUpperCase()}`}else if(type==='genre'){el.textContent=`${t.genreLabel}: ${(item.genres||[]).join(', ')||'—'}`}el.className='game-feedback hint'}
-function nextRound(){if(game.index<game.items.length-1){game.index++;renderRound()}else finishGame()}
-function finishGame(){clearInterval(game.timer);const time=elapsed();const record={name:game.player,correct:game.correct,total:game.items.length,score:game.score,time,date:new Date().toISOString()};const records=JSON.parse(localStorage.getItem('kp_game_records')||'[]');records.push(record);records.sort((a,b)=>b.correct-a.correct||b.score-a.score||a.time.localeCompare(b.time));localStorage.setItem('kp_game_records',JSON.stringify(records.slice(0,20)));$('#gamePlay').hidden=true;$('#gameResults').hidden=false;const en=localStorage.getItem('kp_language')==='en';$('#gameResults').innerHTML=`<div class="result-trophy">🏆</div><h3>${gameText().finished}</h3><div class="result-stats"><div><b>${game.correct}/${game.items.length}</b><small>${gameText().guessed}</small></div><div><b>${game.score}</b><small>${gameText().score}</small></div><div><b>${time}</b><small>${gameText().time}</small></div></div><button class="primary" id="playAgain">${en?'Play again':'Сыграть ещё раз'}</button><button class="secondary" id="backToSetup">${en?'Change settings':'Изменить настройки'}</button>`;$('#playAgain').onclick=()=>{$('#gameSetup').hidden=false;$('#gameResults').hidden=true;startGame()};$('#backToSetup').onclick=()=>{$('#gameSetup').hidden=false;$('#gameResults').hidden=true};renderLeaderboard();}
-function renderLeaderboard(){const list=JSON.parse(localStorage.getItem('kp_game_records')||'[]');const en=localStorage.getItem('kp_language')==='en';$('#leaderboardList').innerHTML=list.length?list.slice(0,10).map((r,i)=>`<div class="leader-row"><b class="leader-rank">${i+1}</b><strong>${esc(r.name)}</strong><span>${r.correct}/${r.total} ${en?'guessed':'угадано'}</span><b>${r.score} ${en?'pts':'очк.'}</b></div>`).join(''):`<div class="leader-empty">${gameText().noRecords}</div>`}
-$('#startGame').addEventListener('click',startGame);$('#submitGuess').addEventListener('click',submitGuess);$('#guessInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitGuess()});$('#nextRound').addEventListener('click',nextRound);document.querySelectorAll('.hint-btn').forEach(b=>b.addEventListener('click',()=>useHint(b.dataset.hint)));
-setLanguage(localStorage.getItem('kp_language')||'ru');
+const state = {
+  page: 1,
+  totalPages: 1,
+  movies: [],
+  selectedFilter: "all",
+  genre: "",
+  year: "",
+  sort: "popularity.desc",
+  query: "",
+  game: null,
+  currentMovie: null
+};
+
+function read(key, fallback) {
+  try {
+    const value = localStorage.getItem("kp_" + key);
+    return value ? JSON.parse(value) : fallback;
+  } catch { return fallback; }
+}
+function write(key, value) {
+  try { localStorage.setItem("kp_" + key, JSON.stringify(value)); }
+  catch { showToast("Не удалось сохранить данные в браузере"); }
+}
+function getSet(key) { return new Set(read(key, [])); }
+function imageUrl(path) { return path ? IMAGE + path : ""; }
+function titleOf(movie) { return movie.title || movie.name || "Без названия"; }
+function yearOf(movie) {
+  const date = movie.release_date || movie.first_air_date || "";
+  return date ? date.slice(0, 4) : "—";
+}
+function showToast(message) {
+  const toast = $("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  })[c]);
+}
+
+function getApiKey() {
+  return localStorage.getItem("kp_tmdb_key") || "";
+}
+function saveApiKey(key) {
+  if (key.trim()) localStorage.setItem("kp_tmdb_key", key.trim());
+  else localStorage.removeItem("kp_tmdb_key");
+}
+
+async function api(path, params = {}) {
+  const key = getApiKey();
+  if (!key) throw new Error("NO_API_KEY");
+  const url = new URL(API + path);
+  url.searchParams.set("api_key", key);
+  url.searchParams.set("language", "ru-RU");
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== "" && v !== null && v !== undefined) url.searchParams.set(k, v);
+  });
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Ошибка каталога: " + response.status);
+  return response.json();
+}
+
+function setupFilters() {
+  $("genreSelect").innerHTML = '<option value="">Все жанры</option>' +
+    Object.entries(GENRES).map(([id, name]) =>
+      `<option value="${id}">${name}</option>`).join("");
+
+  const now = new Date().getFullYear();
+  $("yearSelect").innerHTML = '<option value="">Любой год</option>' +
+    Array.from({length: now - 1894}, (_, i) => now - i)
+      .map(year => `<option value="${year}">${year}</option>`).join("");
+}
+
+function currentParams(page) {
+  const params = {
+    page,
+    sort_by: state.sort,
+    include_adult: "false",
+    "vote_count.gte": state.sort === "vote_average.desc" ? 100 : undefined
+  };
+  if (state.genre) params.with_genres = state.genre;
+  if (state.year) params.primary_release_year = state.year;
+  return params;
+}
+
+async function loadMovies(reset = false) {
+  if (reset) {
+    state.page = 1;
+    state.movies = [];
+    $("movieGrid").innerHTML = '<div class="empty-state">Загружаем фильмы…</div>';
+  }
+  const key = getApiKey();
+  if (!key) {
+    $("movieGrid").innerHTML = `
+      <div class="empty-state">
+        <h3>Подключи каталог фильмов</h3>
+        <p>Нужен API-ключ TMDB. Открой настройки и добавь его, чтобы загружать фильмы с постерами.</p>
+        <button class="button primary" onclick="openSettings()">Открыть настройки</button>
+        <p class="small">Для публичного сайта безопаснее подключить API через серверный Worker, а не хранить ключ в браузере.</p>
+      </div>`;
+    $("resultCount").textContent = "Нужна настройка";
+    $("loadMore").hidden = true;
+    return;
+  }
+
+  try {
+    const path = state.query ? "/search/movie" : "/discover/movie";
+    const params = state.query
+      ? {page: state.page, query: state.query, include_adult: "false"}
+      : currentParams(state.page);
+    const data = await api(path, params);
+
+    state.totalPages = Math.min(data.total_pages || 1, 500);
+    const incoming = data.results || [];
+    state.movies = reset ? incoming : state.movies.concat(incoming);
+    renderMovies();
+    $("resultCount").textContent = `${Number(data.total_results || 0).toLocaleString("ru-RU")} результатов`;
+    $("loadMore").hidden = state.page >= state.totalPages || incoming.length === 0;
+  } catch (error) {
+    const message = error.message === "NO_API_KEY"
+      ? "Добавь API-ключ TMDB в настройках."
+      : "Не удалось загрузить каталог. Проверь ключ и соединение.";
+    $("movieGrid").innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
+    $("resultCount").textContent = "Каталог недоступен";
+    $("loadMore").hidden = true;
+  }
+}
+
+function visibleMovies() {
+  const favorites = getSet("favorites");
+  const watched = getSet("watched");
+  let movies = [...state.movies];
+
+  if (state.selectedFilter === "favorites")
+    movies = movies.filter(m => favorites.has(m.id));
+  if (state.selectedFilter === "watched")
+    movies = movies.filter(m => watched.has(m.id));
+
+  return movies;
+}
+
+function renderMovies() {
+  const favorites = getSet("favorites");
+  const watched = getSet("watched");
+  const movies = visibleMovies();
+
+  if (!movies.length) {
+    $("movieGrid").innerHTML = '<div class="empty-state">Здесь пока пусто. Попробуй изменить фильтры.</div>';
+    return;
+  }
+
+  $("movieGrid").innerHTML = movies.map(movie => {
+    const title = escapeHtml(titleOf(movie));
+    const poster = imageUrl(movie.poster_path);
+    const rating = Number(movie.vote_average || 0).toFixed(1);
+    return `
+      <article class="movie-card">
+        <div class="poster-wrap" data-open="${movie.id}" role="button" tabindex="0" aria-label="Подробнее: ${title}">
+          ${poster
+            ? `<img loading="lazy" src="${poster}" alt="Постер: ${title}" onerror="this.style.display='none';this.nextElementSibling.hidden=false">`
+            : ""}
+          <div class="poster-fallback" ${poster ? "hidden" : ""}>🎬<br>${title}</div>
+          <span class="rating">★ ${rating}</span>
+        </div>
+        <div class="movie-card-body">
+          <h3 class="movie-title" data-open="${movie.id}">${title}</h3>
+          <div class="movie-year">${yearOf(movie)} · ${(movie.genre_ids || []).slice(0,2).map(id => GENRES[id] || "").filter(Boolean).join(", ")}</div>
+          <div class="card-actions">
+            <button class="${favorites.has(movie.id) ? "selected" : ""}" data-action="favorite" data-id="${movie.id}" aria-label="Избранное">${favorites.has(movie.id) ? "♥" : "♡"}</button>
+            <button class="${watched.has(movie.id) ? "selected" : ""}" data-action="watched" data-id="${movie.id}" aria-label="Просмотрено">${watched.has(movie.id) ? "✓" : "＋"}</button>
+            <button data-action="details" data-id="${movie.id}" aria-label="Подробнее">•••</button>
+          </div>
+        </div>
+      </article>`;
+  }).join("");
+}
+
+function toggleItem(key, id) {
+  const items = getSet(key);
+  if (items.has(id)) items.delete(id); else items.add(id);
+  write(key, [...items]);
+  renderMovies();
+  renderProfile();
+}
+
+async function openMovie(id) {
+  let movie = state.movies.find(m => m.id === Number(id));
+  try {
+    if (getApiKey()) movie = await api("/movie/" + id, {});
+  } catch {}
+  if (!movie) return showToast("Не удалось открыть фильм");
+  state.currentMovie = movie;
+
+  const title = titleOf(movie);
+  const poster = imageUrl(movie.poster_path);
+  const favorites = getSet("favorites");
+  const watched = getSet("watched");
+  const reviews = read("reviews", {});
+  const review = reviews[movie.id] || {};
+  const genres = (movie.genres || (movie.genre_ids || []).map(id => ({name:GENRES[id]})))
+    .map(g => g.name).filter(Boolean).join(", ");
+
+  $("movieDetails").innerHTML = `
+    <div class="detail-layout">
+      ${poster ? `<img src="${poster}" alt="Постер ${escapeHtml(title)}">` : ""}
+      <div>
+        <div class="eyebrow">КАРТОЧКА ФИЛЬМА</div>
+        <h2>${escapeHtml(title)}</h2>
+        <p class="muted">${yearOf(movie)} · ★ ${Number(movie.vote_average || 0).toFixed(1)}</p>
+        <p>${escapeHtml(genres || "Жанр не указан")}</p>
+        <p>${escapeHtml(movie.overview || "Описание пока отсутствует.")}</p>
+        <div class="detail-actions">
+          <button class="button secondary" id="detailFavorite">${favorites.has(movie.id) ? "♥ В избранном" : "♡ В избранное"}</button>
+          <button class="button secondary" id="detailWatched">${watched.has(movie.id) ? "✓ Просмотрено" : "＋ Просмотрено"}</button>
+        </div>
+      </div>
+    </div>
+    <div class="review-form">
+      <h3>Моя оценка и отзыв</h3>
+      <label>Оценка от 1 до 10<select id="reviewRating">${Array.from({length:10},(_,i)=>`<option value="${i+1}" ${Number(review.rating)===i+1?"selected":""}>${i+1}/10</option>`).join("")}</select></label>
+      <textarea id="reviewText" placeholder="Что ты думаешь об этом фильме?">${escapeHtml(review.text || "")}</textarea>
+      <button class="button primary" id="saveReview">Сохранить отзыв</button>
+      <p class="muted small">Личный отзыв сохраняется только в этом браузере.</p>
+    </div>`;
+
+  $("movieModal").hidden = false;
+  $("detailFavorite").onclick = () => {
+    toggleItem("favorites", movie.id);
+    openMovie(movie.id);
+  };
+  $("detailWatched").onclick = () => {
+    toggleItem("watched", movie.id);
+    openMovie(movie.id);
+  };
+  $("saveReview").onclick = () => {
+    const reviews = read("reviews", {});
+    reviews[movie.id] = {
+      title,
+      rating: Number($("reviewRating").value),
+      text: $("reviewText").value.trim()
+    };
+    write("reviews", reviews);
+    renderProfile();
+    showToast("Отзыв сохранён");
+  };
+}
+
+function renderProfile() {
+  const profile = read("profile", {name:"Киноман", emoji:"🎬"});
+  $("sideName").textContent = profile.name;
+  $("topName").textContent = profile.name;
+  $("welcomeTitle").textContent = `С возвращением, ${profile.name}!`;
+  $("sideAvatar").textContent = profile.emoji;
+  $("topAvatar").textContent = profile.emoji;
+  $("profileAvatar").textContent = profile.emoji;
+  $("profileName").value = profile.name;
+  $("profileEmoji").value = profile.emoji;
+  $("statWatched").textContent = getSet("watched").size;
+  $("statFavorites").textContent = getSet("favorites").size;
+  $("statRecords").textContent = read("records", []).length;
+
+  const reviews = Object.values(read("reviews", {}));
+  $("myReviews").innerHTML = reviews.length
+    ? reviews.map(r => `<div class="review-item"><strong>${escapeHtml(r.title)} · ★ ${r.rating}/10</strong><p>${escapeHtml(r.text || "Без комментария")}</p></div>`).join("")
+    : '<div class="empty-state">Пока нет отзывов.</div>';
+}
+
+function renderRecords() {
+  const records = read("records", []).sort((a,b) => b.score - a.score).slice(0,20);
+  $("leaderboardList").innerHTML = records.length
+    ? records.map((r,i) => `<div class="record-row"><span>${i+1}</span><strong>${escapeHtml(r.name)}</strong><span>★ ${r.score}</span></div>`).join("")
+    : '<div class="empty-state">Сыграй первый раунд!</div>';
+}
+
+function openSettings() {
+  $("themeSelect").value = document.body.dataset.theme || "dark";
+  $("settingsModal").hidden = false;
+}
+window.openSettings = openSettings;
+
+function setTheme(theme) {
+  document.body.dataset.theme = theme;
+  localStorage.setItem("kp_theme", theme);
+}
+
+function setupAuth() {
+  $("loginButton").onclick = () => location.href = AUTH + "/login";
+  fetch(AUTH + "/me", {credentials:"include"})
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      const user = data && (data.user || data);
+      if (user && (user.login || user.display_name || user.real_name)) {
+        $("authArea").innerHTML = `<span class="muted">${escapeHtml(user.display_name || user.real_name || user.login)}</span>`;
+        $("sideStatus").textContent = "Вошли через Яндекс";
+      }
+    }).catch(() => {});
+}
+
+function startGame() {
+  if (state.movies.length < 2) {
+    showToast("Сначала подключи каталог и загрузи фильмы");
+    return;
+  }
+  const pool = [...state.movies].filter(m => m.poster_path);
+  if (pool.length < 2) return showToast("Недостаточно фильмов с постерами");
+  const count = Math.min(Number($("roundCount").value), pool.length);
+  for (let i=pool.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [pool[i],pool[j]]=[pool[j],pool[i]];
+  }
+  state.game = {pool:pool.slice(0,count), index:0, hearts:5, score:0, usedHint:false, answered:false, started:Date.now()};
+  $("gameSetup").hidden = true;
+  $("gameResults").hidden = true;
+  $("gamePlay").hidden = false;
+  showRound();
+}
+
+function showRound() {
+  const g = state.game;
+  if (!g || g.index >= g.pool.length) return finishGame();
+  const movie = g.pool[g.index];
+  g.answered = false;
+  g.usedHint = false;
+  $("roundLabel").textContent = `Раунд ${g.index+1} / ${g.pool.length}`;
+  $("gameScore").textContent = `Очки: ${g.score}`;
+  $("heartBar").textContent = "♥ ".repeat(g.hearts) + "♡ ".repeat(5-g.hearts);
+  $("gamePoster").src = imageUrl(movie.poster_path);
+  $("gamePoster").alt = "Постер фильма";
+  $("gamePrompt").textContent = "Угадай название фильма";
+  $("guessInput").value = "";
+  $("guessInput").disabled = false;
+  $("submitGuess").disabled = false;
+  $("gameFeedback").textContent = "";
+  $("nextRound").hidden = true;
+  document.querySelectorAll(".hint-button").forEach(b => b.disabled = false);
+}
+
+function answerGuess() {
+  const g = state.game;
+  if (!g || g.answered) return;
+  const movie = g.pool[g.index];
+  const answer = $("guessInput").value.trim().toLocaleLowerCase("ru");
+  if (!answer) return;
+  const correct = titleOf(movie).toLocaleLowerCase("ru");
+  const original = (movie.original_title || "").toLocaleLowerCase("ru");
+  if (answer === correct || answer === original) {
+    g.score += 100 + g.hearts * 10;
+    $("gameFeedback").textContent = "Верно! Отличное знание кино 🎉";
+    $("gameFeedback").style.color = "var(--accent)";
+  } else {
+    $("gameFeedback").textContent = `Не совсем. Ответ: ${titleOf(movie)}`;
+    $("gameFeedback").style.color = "#fca5a5";
+  }
+  g.answered = true;
+  $("guessInput").disabled = true;
+  $("submitGuess").disabled = true;
+  $("nextRound").hidden = false;
+  $("gameScore").textContent = `Очки: ${g.score}`;
+  document.querySelectorAll(".hint-button").forEach(b => b.disabled = true);
+}
+
+function useHint(type) {
+  const g = state.game;
+  if (!g || g.answered) return;
+  if (g.hearts <= 0) return showToast("Сердца закончились");
+  const movie = g.pool[g.index];
+  g.hearts--;
+  let hint = "";
+  if (type === "year") hint = "Год выхода: " + yearOf(movie);
+  if (type === "genre") hint = "Жанр: " + (movie.genre_ids || []).map(id => GENRES[id]).filter(Boolean).join(", ");
+  if (type === "letter") hint = "Первая буква: " + titleOf(movie).charAt(0);
+  $("gamePrompt").textContent = hint;
+  $("heartBar").textContent = "♥ ".repeat(g.hearts) + "♡ ".repeat(5-g.hearts);
+  g.usedHint = true;
+  const button = document.querySelector(`.hint-button[data-hint="${type}"]`);
+  if (button) button.disabled = true;
+}
+
+function finishGame() {
+  const g = state.game;
+  if (!g) return;
+  $("gamePlay").hidden = true;
+  $("gameResults").hidden = false;
+  const name = $("playerName").value.trim() || read("profile", {name:"Киноман"}).name || "Киноман";
+  const records = read("records", []);
+  records.push({name, score:g.score, date:new Date().toISOString()});
+  write("records", records);
+  $("gameResults").innerHTML = `<h3>Игра завершена! 🎬</h3><p>Игрок: ${escapeHtml(name)}</p><p>Твой результат: <strong>${g.score} очков</strong></p><button class="button primary" id="playAgain">Сыграть ещё раз</button>`;
+  $("playAgain").onclick = () => {
+    $("gameSetup").hidden = false;
+    $("gameResults").hidden = true;
+  };
+  renderRecords();
+  renderProfile();
+}
+
+function bindEvents() {
+  $("searchInput").addEventListener("input", debounce(() => {
+    state.query = $("searchInput").value.trim();
+    loadMovies(true);
+  }, 450));
+  $("genreSelect").onchange = () => { state.genre=$("genreSelect").value; state.query=""; $("searchInput").value=""; loadMovies(true); };
+  $("yearSelect").onchange = () => { state.year=$("yearSelect").value; loadMovies(true); };
+  $("sortSelect").onchange = () => { state.sort=$("sortSelect").value; loadMovies(true); };
+  $("loadMore").onclick = () => { state.page++; loadMovies(false); };
+
+  $("quickFilters").onclick = event => {
+    const button = event.target.closest("[data-filter]");
+    if (!button) return;
+    state.selectedFilter = button.dataset.filter;
+    document.querySelectorAll(".filter-tab").forEach(b => b.classList.toggle("active", b===button));
+    renderMovies();
+  };
+
+  $("movieGrid").addEventListener("click", event => {
+    const action = event.target.closest("[data-action]");
+    if (action) {
+      const id = Number(action.dataset.id);
+      if (action.dataset.action === "favorite") toggleItem("favorites", id);
+      if (action.dataset.action === "watched") toggleItem("watched", id);
+      if (action.dataset.action === "details") openMovie(id);
+      return;
+    }
+    const open = event.target.closest("[data-open]");
+    if (open) openMovie(Number(open.dataset.open));
+  });
+  $("movieGrid").addEventListener("keydown", event => {
+    if ((event.key === "Enter" || event.key === " ") && event.target.matches("[data-open]")) {
+      event.preventDefault();
+      openMovie(Number(event.target.dataset.open));
+    }
+  });
+
+  $("surpriseButton").onclick = surprise;
+  $("themeToggle").onclick = () => {
+    const themes = ["dark","light","violet","ocean"];
+    const current = document.body.dataset.theme || "dark";
+    setTheme(themes[(themes.indexOf(current)+1)%themes.length]);
+  };
+  $("profileShortcut").onclick = () => location.hash = "profile";
+  $("openSettings").onclick = openSettings;
+  $("closeSettings").onclick = () => $("settingsModal").hidden = true;
+  $("themeSelect").onchange = () => setTheme($("themeSelect").value);
+  $("languageSelect").onchange = () => showToast("Перевод интерфейса будет добавлен отдельно");
+
+  document.querySelectorAll("[data-close]").forEach(button => {
+    button.onclick = () => $(button.dataset.close).hidden = true;
+  });
+  document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
+    backdrop.addEventListener("click", event => {
+      if (event.target === backdrop) backdrop.hidden = true;
+    });
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") document.querySelectorAll(".modal-backdrop").forEach(m => m.hidden = true);
+  });
+
+  $("saveProfile").onclick = () => {
+    write("profile", {name:$("profileName").value.trim() || "Киноман", emoji:$("profileEmoji").value});
+    renderProfile();
+    showToast("Профиль сохранён");
+  };
+  $("startGame").onclick = startGame;
+  $("submitGuess").onclick = answerGuess;
+  $("guessInput").addEventListener("keydown", event => { if (event.key==="Enter") answerGuess(); });
+  $("nextRound").onclick = () => { state.game.index++; showRound(); };
+  document.querySelectorAll(".hint-button").forEach(button => {
+    button.onclick = () => useHint(button.dataset.hint);
+  });
+}
+
+function surprise() {
+  const movies = state.movies.filter(m => m.poster_path);
+  if (!movies.length) {
+    location.hash = "catalog";
+    showToast("Сначала подключи каталог фильмов");
+    return;
+  }
+  openMovie(movies[Math.floor(Math.random()*movies.length)].id);
+}
+
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => { clearTimeout(timer); timer=setTimeout(() => fn(...args),delay); };
+}
+
+function init() {
+  setupFilters();
+  bindEvents();
+  setTheme(localStorage.getItem("kp_theme") || "dark");
+  renderProfile();
+  renderRecords();
+  setupAuth();
+  loadMovies(true);
+}
+
+init();
