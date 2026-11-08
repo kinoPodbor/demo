@@ -10,7 +10,7 @@
 
   /* ===================== CONFIG ===================== */
 
-  const TMDB_API_KEY = "ВСТАВЬ_НОВЫЙ_TMDB_API_KEY";
+  const TMDB_API_KEY = "2bb8c24e985622869c01b9ced2972ebe";
   const TMDB_BASE = "https://api.themoviedb.org/3";
   const TMDB_IMAGE = "https://image.tmdb.org/t/p/";
   const AUTH_URL = "https://kinopodbor-auth.2dnd99vgwk.workers.dev";
