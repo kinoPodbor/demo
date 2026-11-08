@@ -1,39 +1,42 @@
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10111b">
-  <meta name="description" content="КиноПодбор — фильмы, подборки и киновызовы">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
-  <title>КиноПодбор</title>
+  <meta name="description" content="KinoPodbor — каталог фильмов, отзывы и игра в угадывание кино по кадрам.">
+  <title>KinoPodbor — подбор фильмов</title>
+  <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
+<body data-theme="dark">
   <div class="app">
     <aside class="sidebar">
-      <a class="brand" href="#home"><span class="brand-icon">К</span><span>Кино<span class="accent">Подбор</span></span></a>
+      <a class="brand" href="#home">
+        <span class="brand-icon">🎬</span>
+        <span>Kino<span class="accent">Podbor</span></span>
+      </a>
 
-      <div class="nav-label">МЕНЮ</div>
-      <nav class="side-nav">
-        <a class="nav-link active" href="#home">⌂ <span>Главная</span></a>
-        <a class="nav-link" href="#catalog">▦ <span>Каталог</span></a>
-        <a class="nav-link" href="#game">✦ <span>Киновызов</span></a>
-        <a class="nav-link" href="#records">♛ <span>Рекорды</span></a>
-        <a class="nav-link" href="#profile">◎ <span>Мой профиль</span></a>
+      <p class="nav-label">МЕНЮ</p>
+      <nav class="side-nav" aria-label="Главная навигация">
+        <a class="nav-link active" href="#home"><span>🏠</span><span>Главная</span></a>
+        <a class="nav-link" href="#catalog"><span>🎞️</span><span>Каталог</span></a>
+        <a class="nav-link" href="#game"><span>🎮</span><span>Угадай фильм</span></a>
+        <a class="nav-link" href="#records"><span>🏆</span><span>Рекорды</span></a>
+        <a class="nav-link" href="#profile"><span>👤</span><span>Профиль</span></a>
       </nav>
 
       <div class="sidebar-bottom">
         <div class="mini-profile">
-          <div class="avatar" id="sideAvatar">🎬</div>
+          <div class="avatar" id="miniAvatar">🍿</div>
           <div class="mini-profile-text">
-            <strong id="sideName">Киноман</strong>
-            <span id="sideStatus">Локальный профиль</span>
+            <strong id="miniProfileName">Киноман</strong>
+            <span id="authStatus">Гость</span>
           </div>
         </div>
-        <button class="nav-link settings-link" id="openSettings">⚙ <span>Настройки</span></button>
+        <button class="nav-link settings-link" id="openSettings" type="button">
+          <span>⚙️</span><span>Настройки</span>
+        </button>
       </div>
     </aside>
 
@@ -41,29 +44,33 @@
       <header class="topbar">
         <div>
           <div class="eyebrow">ТВОЯ КИНОВСЕЛЕННАЯ</div>
-          <h1 id="welcomeTitle">Что посмотрим сегодня?</h1>
+          <h1 id="pageTitle">Главная</h1>
         </div>
         <div class="topbar-actions">
-          <button class="icon-button" id="themeToggle" title="Сменить тему" aria-label="Сменить тему">☼</button>
-          <button class="profile-button" id="profileShortcut"><span id="topAvatar">🎬</span><span id="topName">Профиль</span></button>
-          <div id="authArea"><button class="button primary" id="loginButton">Войти через Яндекс</button></div>
+          <button class="icon-button" id="surpriseBtn" type="button" title="Случайный фильм">🎲</button>
+          <div id="authArea">
+            <a class="button secondary" href="https://kinopodbor-auth.2dnd99vgwk.workers.dev/login">Войти через Яндекс</a>
+          </div>
+          <a class="profile-button" href="#profile">
+            <span id="topAvatar">🍿</span><span>Профиль</span>
+          </a>
         </div>
       </header>
 
-      <section class="hero" id="home">
+      <section class="hero page-active" id="home">
         <div class="hero-content">
-          <span class="pill">✦ ТВОЙ СЛЕДУЮЩИЙ ФАВОРИТ</span>
-          <h2>Истории, которые<br><span class="gradient-text">остаются с тобой.</span></h2>
-          <p>Ищи фильмы под настроение, открывай новое и проверяй свои знания кино.</p>
+          <span class="pill">ТВОЙ СЛЕДУЮЩИЙ ЛЮБИМЫЙ ФИЛЬМ</span>
+          <h2>Кино, которое<br>попадает <span class="gradient-text">в настроение</span></h2>
+          <p>Открывай фильмы, сохраняй любимые, делись впечатлениями и проверь, насколько хорошо ты знаешь кино.</p>
           <div class="hero-actions">
-            <a class="button primary" href="#catalog">Открыть каталог ↗</a>
-            <button class="button secondary" id="surpriseButton">✦ Удиви меня</button>
+            <a class="button primary" href="#catalog">Открыть каталог →</a>
+            <a class="button secondary" href="#game">🎮 Играть</a>
           </div>
         </div>
         <div class="hero-art" aria-hidden="true">
-          <div class="art-orbit orbit-one"></div>
+          <div class="art-orbit"></div>
           <div class="art-orbit orbit-two"></div>
-          <div class="art-center">КИНО<small>ТВОЯ ИСТОРИЯ</small></div>
+          <div class="art-center">🎬<small>KINOPODBOR</small></div>
           <span class="art-star star-one">✦</span>
           <span class="art-star star-two">✧</span>
         </div>
@@ -71,137 +78,230 @@
 
       <section class="section" id="catalog">
         <div class="section-heading">
-          <div><div class="eyebrow">ТВОЯ КОЛЛЕКЦИЯ</div><h2>Каталог фильмов</h2></div>
-          <span class="muted" id="resultCount">Загружаем…</span>
+          <div>
+            <div class="eyebrow">ИССЛЕДУЙ</div>
+            <h2>Каталог фильмов</h2>
+            <p class="muted">Найди кино под своё настроение</p>
+          </div>
+          <span class="muted small" id="resultCount">Загрузка...</span>
         </div>
 
         <div class="search-row">
-          <label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Название фильма…" autocomplete="off"></label>
-          <select id="genreSelect" aria-label="Жанр"><option value="">Все жанры</option></select>
-          <select id="yearSelect" aria-label="Год"><option value="">Любой год</option></select>
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="searchInput" type="search" placeholder="Название фильма..." autocomplete="off">
+          </label>
+          <select id="genreSelect" aria-label="Жанр">
+            <option value="">Все жанры</option>
+          </select>
+          <select id="yearSelect" aria-label="Год">
+            <option value="">Любой год</option>
+          </select>
           <select id="sortSelect" aria-label="Сортировка">
-            <option value="popularity.desc">Популярные</option>
-            <option value="vote_average.desc">По рейтингу</option>
-            <option value="release_date.desc">Сначала новые</option>
-            <option value="release_date.asc">Сначала старые</option>
+            <option value="popular">Популярные</option>
+            <option value="rating">По рейтингу</option>
+            <option value="newest">Сначала новые</option>
           </select>
         </div>
 
         <div class="filter-tabs" id="quickFilters">
-          <button class="filter-tab active" data-filter="all">Все фильмы</button>
-          <button class="filter-tab" data-filter="favorites">♥ Избранное</button>
-          <button class="filter-tab" data-filter="watched">✓ Просмотренные</button>
+          <button class="filter-tab active" data-filter="popular" type="button">Популярное</button>
+          <button class="filter-tab" data-filter="top" type="button">Лучшие</button>
+          <button class="filter-tab" data-filter="now" type="button">В прокате</button>
+          <button class="filter-tab" data-filter="upcoming" type="button">Скоро</button>
         </div>
 
-        <div class="movie-grid" id="movieGrid">
+        <div class="movie-grid" id="movieGrid" aria-live="polite">
           <div class="empty-state">Загружаем фильмы…</div>
         </div>
-        <div class="load-more"><button class="button secondary" id="loadMore">Показать ещё</button></div>
+        <div class="load-more">
+          <button class="button secondary" id="loadMore" type="button">Загрузить ещё</button>
+        </div>
       </section>
 
-      <section class="section game-section" id="game">
+      <section class="section" id="game">
         <div class="section-heading">
-          <div><div class="eyebrow">ПРОВЕРЬ СЕБЯ</div><h2>Киновызов</h2></div>
-          <span class="pill">♥ 5 сердец</span>
+          <div>
+            <div class="eyebrow">КИНОВИКТОРИНА</div>
+            <h2>Угадай фильм по кадру</h2>
+            <p class="muted">Проверь свою память и набери рекорд</p>
+          </div>
         </div>
-        <div class="panel game-panel">
-          <div id="gameSetup">
-            <h3>Угадаешь фильм по постеру?</h3>
-            <p class="muted">Правильные ответы приносят очки. Подсказки стоят одного сердца.</p>
-            <div class="game-options">
-              <label>Имя игрока<input id="playerName" maxlength="20" placeholder="Киноман"></label>
-              <label>Раунды<select id="roundCount"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label>
-              <button class="button primary" id="startGame">Начать игру →</button>
-            </div>
+
+        <div class="panel game-panel" id="gameSetup">
+          <h3>Готов проверить себя?</h3>
+          <p class="muted">Угадывай фильмы по изображениям. За правильные ответы начисляются очки.</p>
+          <div class="game-options">
+            <label>Имя игрока
+              <input id="playerName" maxlength="24" placeholder="Как тебя называть?">
+            </label>
+            <label>Раундов
+              <select id="roundCount">
+                <option value="5">5 раундов</option>
+                <option value="10">10 раундов</option>
+                <option value="15">15 раундов</option>
+              </select>
+            </label>
+            <button class="button primary" id="startGame" type="button">Начать игру</button>
           </div>
-          <div id="gamePlay" hidden>
-            <div class="game-meta"><span id="roundLabel">Раунд 1</span><span id="gameScore">Очки: 0</span><span id="heartBar">♥ ♥ ♥ ♥ ♥</span></div>
-            <div class="game-card">
-              <img id="gamePoster" alt="Постер фильма">
-              <div class="game-question">
-                <div class="eyebrow">ЧТО ЭТО ЗА ФИЛЬМ?</div>
-                <h3 id="gamePrompt">Угадай название</h3>
-                <input id="guessInput" placeholder="Введи название…" autocomplete="off">
-                <button class="button primary" id="submitGuess">Ответить</button>
-                <p id="gameFeedback" aria-live="polite"></p>
+          <p class="muted small">Изображения предоставляются TMDB. Игра не связана с TMDB официально.</p>
+        </div>
+
+        <div class="panel" id="gamePlay" hidden>
+          <div class="game-meta">
+            <span id="gameProgress">Раунд 1</span>
+            <span id="gameScore">Очки: 0</span>
+          </div>
+          <div class="game-card">
+            <img id="gamePoster" src="" alt="Кадр из фильма" hidden>
+            <div class="poster-fallback" id="gameImageFallback">Изображение загружается…</div>
+            <div class="game-question">
+              <div class="eyebrow">ЧТО ЭТО ЗА ФИЛЬМ?</div>
+              <h3 id="gamePrompt">Введи название фильма</h3>
+              <form id="guessForm">
+                <input id="guessInput" placeholder="Название фильма..." autocomplete="off" required>
+                <button class="button primary" id="submitGuess" type="submit">Ответить</button>
+              </form>
+              <p id="gameFeedback" aria-live="polite"></p>
+              <div class="hint-row">
+                <button class="button secondary" data-hint="year" type="button">💡 Год</button>
+                <button class="button secondary" data-hint="genre" type="button">🎭 Жанр</button>
+                <button class="button secondary" data-hint="letter" type="button">🔤 Первая буква</button>
               </div>
+              <button class="button secondary" id="nextRound" type="button" hidden>Следующий раунд →</button>
             </div>
-            <div class="hint-row">
-              <button class="button secondary hint-button" data-hint="year">Подсказка: год −♥</button>
-              <button class="button secondary hint-button" data-hint="genre">Подсказка: жанр −♥</button>
-              <button class="button secondary hint-button" data-hint="letter">Подсказка: буква −♥</button>
-            </div>
-            <button class="button primary" id="nextRound" hidden>Следующий раунд →</button>
           </div>
-          <div id="gameResults" hidden></div>
+        </div>
+
+        <div class="panel" id="gameResults" hidden>
+          <h3>Игра окончена!</h3>
+          <p id="finalScore"></p>
+          <button class="button primary" id="playAgain" type="button">Сыграть ещё раз</button>
         </div>
       </section>
 
       <section class="section" id="records">
-        <div class="section-heading"><div><div class="eyebrow">ЛУЧШИЕ РЕЗУЛЬТАТЫ</div><h2>Таблица рекордов</h2></div></div>
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">ТВОИ ДОСТИЖЕНИЯ</div>
+            <h2>Рекорды</h2>
+          </div>
+        </div>
         <div class="panel">
-          <div class="record-row record-head"><span>Место</span><span>Игрок</span><span>Очки</span></div>
-          <div id="leaderboardList"><div class="empty-state">Сыграй первый раунд!</div></div>
-          <p class="muted small">Пока рекорды хранятся в этом браузере.</p>
+          <div class="record-row record-head">
+            <span>Место</span><span>Игрок</span><span>Очки</span>
+          </div>
+          <div id="leaderboardList">
+            <div class="empty-state">Пока нет рекордов. Сыграй первую партию!</div>
+          </div>
         </div>
       </section>
 
       <section class="section" id="profile">
-        <div class="section-heading"><div><div class="eyebrow">ТВОЯ КИНОИСТОРИЯ</div><h2>Профиль</h2></div></div>
-        <div class="panel profile-panel">
-          <div class="profile-avatar" id="profileAvatar">🎬</div>
-          <div class="profile-fields">
-            <label>Имя пользователя<input id="profileName" maxlength="24" placeholder="Как тебя называть?"></label>
-            <label>Аватар
-              <select id="profileEmoji">
-                <option value="🎬">🎬 Кино</option><option value="🍿">🍿 Попкорн</option>
-                <option value="🎭">🎭 Театр</option><option value="🚀">🚀 Фантастика</option>
-                <option value="🐱">🐱 Кот</option><option value="⭐">⭐ Звезда</option>
-              </select>
-            </label>
-            <button class="button primary" id="saveProfile">Сохранить профиль</button>
-          </div>
-          <div class="profile-stats">
-            <div><strong id="statWatched">0</strong><span>Просмотрено</span></div>
-            <div><strong id="statFavorites">0</strong><span>Избранное</span></div>
-            <div><strong id="statRecords">0</strong><span>Игр сыграно</span></div>
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">ТВОЁ КИНОПРОСТРАНСТВО</div>
+            <h2>Профиль</h2>
           </div>
         </div>
-        <div class="section-heading subheading"><div><h3>Мои отзывы</h3><p class="muted">Оставляй заметки к фильмам в их карточках.</p></div></div>
-        <div id="myReviews" class="panel"><div class="empty-state">Пока нет отзывов.</div></div>
+
+        <div class="panel profile-panel">
+          <div class="profile-avatar" id="profileAvatar">🍿</div>
+          <div class="profile-fields">
+            <label>Имя профиля
+              <input id="profileName" maxlength="30" placeholder="Твоё имя">
+            </label>
+            <label>Эмодзи профиля
+              <input id="profileEmoji" maxlength="8" placeholder="🍿">
+            </label>
+            <button class="button primary" id="saveProfile" type="button">Сохранить профиль</button>
+            <button class="button secondary" id="logoutBtn" type="button" hidden>Выйти из Яндекса</button>
+          </div>
+          <div class="profile-stats">
+            <div><strong id="favoriteCount">0</strong><span>Избранное</span></div>
+            <div><strong id="watchedCount">0</strong><span>Просмотрено</span></div>
+            <div><strong id="reviewCount">0</strong><span>Отзывы</span></div>
+          </div>
+        </div>
+
+        <div class="section-heading subheading">
+          <div>
+            <h3>Мои отзывы</h3>
+            <p class="muted small">Твои впечатления о фильмах</p>
+          </div>
+        </div>
+        <div class="panel" id="myReviews">
+          <p class="muted">Ты пока не оставил отзывов.</p>
+        </div>
+
+        <div class="section-heading subheading">
+          <div>
+            <h3>Мои плейлисты</h3>
+            <p class="muted small">Собирай фильмы в собственные подборки</p>
+          </div>
+        </div>
+        <div class="panel">
+          <form id="playlistForm">
+            <label>Название подборки
+              <input id="playlistName" maxlength="60" placeholder="Например, фильмы на выходные" required>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;margin:12px 0">
+              <input id="playlistPublic" type="checkbox" style="width:auto">
+              Сделать подборку публичной
+            </label>
+            <button class="button primary" type="submit">Создать плейлист</button>
+          </form>
+          <div id="playlistList" style="margin-top:16px">
+            <p class="muted">Плейлисты появятся здесь.</p>
+          </div>
+        </div>
       </section>
 
-      <footer>КИНОПОДБОР © 2026 <span>Сделано для хорошего кино</span></footer>
+      <footer>
+        <span>KINOPODBOR © 2026</span>
+        <span>Фильмы для твоего настроения</span>
+      </footer>
     </main>
+
+    <nav class="mobile-nav" aria-label="Мобильная навигация">
+      <a href="#home"><span>🏠</span><small>Главная</small></a>
+      <a href="#catalog"><span>🎞️</span><small>Каталог</small></a>
+      <a href="#game"><span>🎮</span><small>Игра</small></a>
+      <a href="#records"><span>🏆</span><small>Рекорды</small></a>
+      <a href="#profile"><span>👤</span><small>Профиль</small></a>
+    </nav>
   </div>
 
-  <nav class="mobile-nav">
-    <a href="#home">⌂<small>Главная</small></a>
-    <a href="#catalog">▦<small>Каталог</small></a>
-    <a href="#game">✦<small>Игра</small></a>
-    <a href="#records">♛<small>Рекорды</small></a>
-    <a href="#profile">◎<small>Профиль</small></a>
-  </nav>
-
   <div class="modal-backdrop" id="movieModal" hidden>
-    <section class="modal">
-      <button class="modal-close" data-close="movieModal" aria-label="Закрыть">×</button>
-      <div id="movieDetails"></div>
-    </section>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" data-close-modal type="button" aria-label="Закрыть">×</button>
+      <div id="modalContent"></div>
+    </div>
   </div>
 
   <div class="modal-backdrop" id="settingsModal" hidden>
-    <section class="modal settings-modal">
-      <button class="modal-close" data-close="settingsModal" aria-label="Закрыть">×</button>
-      <div class="eyebrow">ПЕРСОНАЛИЗАЦИЯ</div><h2>Настройки</h2>
-      <label>Тема оформления<select id="themeSelect"><option value="dark">Ночная</option><option value="light">Светлая</option><option value="violet">Фиолетовая</option><option value="ocean">Океан</option></select></label>
-      <label>Язык интерфейса<select id="languageSelect"><option value="ru">Русский</option><option value="en">English (частично)</option></select></label>
-      <p class="muted small">Настройки и личные списки хранятся локально в браузере.</p>
-      <button class="button primary" id="closeSettings">Готово</button>
-    </section>
+    <div class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <button class="modal-close" data-close-modal type="button" aria-label="Закрыть">×</button>
+      <h2 id="settingsTitle">Настройки</h2>
+      <label>Тема оформления
+        <select id="themeSelect">
+          <option value="dark">Тёмная</option>
+          <option value="light">Светлая</option>
+          <option value="violet">Фиолетовая</option>
+          <option value="ocean">Океан</option>
+        </select>
+      </label>
+      <label>Язык
+        <select id="languageSelect">
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <button class="button primary" id="saveSettings" type="button">Сохранить настройки</button>
+    </div>
   </div>
 
-  <div class="toast" id="toast" role="status"></div>
-  <script src="app.js"></script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js" defer></script>
 </body>
 </html>
