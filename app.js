@@ -1,4 +1,6 @@
-
+const TMDB_API_KEY = "2bb8c24e985622869c01b9ced2972ebe";
+const TMDB_BASE_URL = "https://api.themoviedb.org/3";
+const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w500";
 "use strict";
 
 const $ = id => document.getElementById(id);
