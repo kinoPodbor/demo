@@ -11,7 +11,7 @@
 <body>
   <div class="app-shell">
 
-    <!-- Боковое меню / Сайдбар -->
+    <!-- Боковая панель (Сайдбар) -->
     <aside class="sidebar">
       <a class="brand" href="#home">
         <span class="brand-icon">🎬</span>
@@ -27,12 +27,15 @@
       </nav>
 
       <div class="sidebar-bottom">
+        <button class="settings-button" id="openSettings" type="button">⚙ Настройки</button>
+
         <div class="sidebar-user" id="authArea">
-          <div class="avatar" id="miniAvatar">🍿</div>
+          <div class="avatar" id="miniAvatar">🎭</div>
           <div class="user-info">
-            <strong id="miniProfileName">Киноман</strong>
+            <strong id="miniProfileName">Гость</strong>
             <span id="authStatus">Локальный профиль</span>
           </div>
+          <button id="loginBtn" class="icon-button primary" type="button" aria-label="Войти через Яндекс" title="Войти через Яндекс">↗</button>
         </div>
       </div>
     </aside>
@@ -81,10 +84,7 @@
 
       <!-- Каталог -->
       <section class="page-section" id="catalog" hidden>
-        <div class="page-heading">
-          <h1>Каталог фильмов</h1>
-        </div>
-
+        <div class="page-heading"><h1>Каталог фильмов</h1></div>
         <div class="catalog-toolbar">
           <input id="searchInput" type="search" placeholder="Название фильма..." autocomplete="off">
           <select id="genreSelect"><option value="">Все жанры</option></select>
@@ -116,7 +116,7 @@
       <section class="page-section" id="game" hidden>
         <div class="page-heading">
           <h1>Угадай фильм по кадру</h1>
-          <p>Постер размыт! Выберите правильное название фильма ниже.</p>
+          <p>Постер размыт! Правильный ответ убирает размытие и даёт 10 очков.</p>
         </div>
         <div class="game-container">
           <div id="gameStartWindow">
@@ -124,11 +124,11 @@
           </div>
           <div id="gamePlayWindow" style="display: none;">
             <div class="game-score">Очки: <span id="gameScoreValue">0</span></div>
-            <div class="game-frame">
+            <div class="game-frame" id="gameFrameBlock">
               <img id="gameFrameImg" src="" alt="Кадр">
             </div>
             <div id="gameOptionsGrid" class="game-options"></div>
-            <button id="gameNextBtn" class="button primary" style="display: none; margin: 20px auto 0; display: block;">Следующий фильм →</button>
+            <button id="gameNextBtn" class="button primary" style="display: none; margin: 20px auto 0;">Следующий фильм →</button>
           </div>
         </div>
       </section>
@@ -136,40 +136,59 @@
       <!-- Рекорды -->
       <section class="page-section" id="records" hidden>
         <div class="page-heading"><h1>Таблица рекордов</h1></div>
-        <div id="recordsGrid"><p class="muted">Рекордов пока нет. Сыграйте в игру!</p></div>
+        <div id="recordsGrid"><p class="muted">Рекордов пока нет. Поставьте рекорд в игре!</p></div>
       </section>
 
       <!-- Профиль -->
       <section class="page-section" id="profile" hidden>
         <div class="page-heading"><h1>Профиль пользователя</h1></div>
         <div class="profile-card">
-          <div id="profileAvatar">🍿</div>
-          <h2 id="profileName">Киноман</h2>
+          <div id="profileAvatar">🎭</div>
+          <div>
+            <h2 id="profileName">Гость</h2>
+            <p id="profileStatusLabel" style="color: var(--muted); font-size: 0.9rem;">Локальный профиль</p>
+          </div>
         </div>
+        <button id="logoutBtn" class="button" style="display: none; margin-top: 20px;">Выйти из профиля</button>
       </section>
     </main>
   </div>
 
-  <!-- Красивое модальное окно информации о фильме -->
+  <!-- Модалка детальной инфы о фильме -->
   <div id="movieModal" class="modal-overlay" hidden>
     <div class="modal-content">
       <button class="modal-close" id="closeModal">×</button>
       <div class="modal-body">
-        <div class="modal-poster-side">
-          <img id="modalPoster" src="" alt="Постер">
-        </div>
+        <div class="modal-poster-side"><img id="modalPoster" src="" alt="Постер"></div>
         <div class="modal-info-side">
           <h2 id="modalTitle">Название фильма</h2>
           <div class="modal-meta">
             <span id="modalYear" class="modal-badge">2026</span>
-            <span id="modalRating" class="modal-badge rating">8.5</span>
+            <span id="modalRating" class="modal-badge rating">★ 0.0</span>
           </div>
-          <p id="modalOverview">Описание фильма загружается...</p>
+          <p id="modalOverview">Описание загружается...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Окно настроек (Смена тем) -->
+  <div id="settingsModal" class="modal-overlay" hidden>
+    <div class="modal-content" style="max-width: 400px;">
+      <button class="modal-close" id="closeSettingsModal">×</button>
+      <div style="padding: 30px;">
+        <h2 style="margin-bottom: 20px;">Настройки темы</h2>
+        <div style="display: grid; gap: 12px;">
+          <button class="button theme-select-btn" data-theme="dark">Тёмная тема</button>
+          <button class="button theme-select-btn" data-theme="light">Светлая тема</button>
+          <button class="button theme-select-btn" data-theme="violet">Фиолетовая тема</button>
+          <button class="button theme-select-btn" data-theme="ocean">Океанская тема</button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="toast"></div>
+  <script src="./app.js"></script>
 </body>
 </html>
