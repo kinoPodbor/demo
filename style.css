@@ -11,19 +11,55 @@
   --radius: 16px;
 }
 
+:root[data-theme="light"] {
+  --bg: #f4f5fa;
+  --bg-secondary: #ffffff;
+  --card: #ffffff;
+  --card-hover: #ececf5;
+  --text: #20202d;
+  --muted: #6f7182;
+  --accent: #7950df;
+  --accent-hover: #6039c4;
+  --border: rgba(30, 30, 50, 0.12);
+}
+
+:root[data-theme="violet"] {
+  --bg: #171023;
+  --bg-secondary: #211630;
+  --card: #2b1d3e;
+  --card-hover: #39264f;
+  --text: #faf4ff;
+  --muted: #c0a9d7;
+  --accent: #c084fc;
+  --accent-hover: #a855f7;
+  --border: rgba(224, 190, 255, 0.14);
+}
+
+:root[data-theme="ocean"] {
+  --bg: #0b1720;
+  --bg-secondary: #10232e;
+  --card: #17313e;
+  --card-hover: #204352;
+  --text: #effaff;
+  --muted: #a4c5d1;
+  --accent: #36c9d6;
+  --accent-hover: #1ba9b8;
+  --border: rgba(170, 230, 240, 0.14);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background 0.2s, color 0.2s;
 }
 
 .app-shell { display: flex; min-height: 100vh; }
 
-/* Сайдбар - Десктоп */
 .sidebar {
   width: 260px;
   background: var(--bg-secondary);
@@ -37,101 +73,88 @@ body {
 }
 
 .brand { display: flex; align-items: center; gap: 12px; color: var(--text); font-size: 1.4rem; font-weight: 800; text-decoration: none; margin-bottom: 40px; }
-.brand-icon { width: 40px; height: 40px; background: var(--accent); display: grid; place-items: center; border-radius: 12px; font-size: 1.2rem; }
+.brand-icon { width: 40px; height: 40px; background: var(--accent); display: grid; place-items: center; border-radius: 12px; }
 
 .side-nav { display: flex; flex-direction: column; gap: 10px; }
-.nav-link { display: flex; align-items: center; gap: 14px; padding: 12px 16px; color: var(--muted); text-decoration: none; border-radius: 12px; font-weight: 500; transition: all 0.2s; }
-.nav-link span { font-size: 1.2rem; }
+.nav-link { display: flex; align-items: center; gap: 14px; padding: 12px 16px; color: var(--muted); text-decoration: none; border-radius: 12px; font-weight: 500; }
 .nav-link:hover, .nav-link.active { background: var(--card); color: var(--text); }
 .nav-link.active { box-shadow: inset 4px 0 0 var(--accent); }
 
-.sidebar-bottom { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
-.sidebar-user { display: flex; align-items: center; gap: 12px; }
-.avatar { width: 40px; height: 40px; background: var(--card-hover); border-radius: 50%; display: grid; place-items: center; font-size: 1.2rem; }
-.user-info strong { display: block; font-size: 0.95rem; }
-.user-info span { font-size: 0.8rem; color: var(--muted); }
+.sidebar-bottom { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
+.settings-button { width: 100%; text-align: left; }
+.sidebar-user { display: flex; align-items: center; gap: 12px; background: var(--card); padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
+.avatar { width: 36px; height: 36px; background: var(--card-hover); border-radius: 50%; display: grid; place-items: center; font-size: 1.1rem; overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.user-info { flex: 1; min-width: 0; }
+.user-info strong { display: block; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-info span { font-size: 0.75rem; color: var(--muted); }
 
-/* Контентная зона */
 .main-content { flex: 1; margin-left: 260px; padding: 40px; min-width: 0; }
 .topbar { margin-bottom: 30px; }
 .breadcrumbs { font-size: 1.1rem; color: var(--muted); }
-.breadcrumbs strong { color: var(--text); }
 
 .page-section { display: none; }
-.page-section.page-active { display: block; animation: fadeIn 0.25s ease forwards; }
+.page-section.page-active { display: block; animation: fadeIn 0.2s ease forwards; }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Сетка фильмов */
-.movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 24px; margin-top: 24px; }
-.movie-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
-.movie-card:hover { transform: translateY(-5px); border-color: var(--accent); }
-.movie-poster-wrap { width: 100%; height: 300px; background: var(--bg); position: relative; }
+.movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 24px; margin-top: 24px; }
+.movie-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+.movie-card:hover { transform: translateY(-4px); }
+.movie-poster-wrap { width: 100%; height: 280px; position: relative; background: #000; }
 .movie-poster-wrap img { width: 100%; height: 100%; object-fit: cover; }
-.movie-rating-badge { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.75); padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; color: #ffc107; backdrop-filter: blur(4px); }
-.movie-card-info { padding: 16px; }
-.movie-card-title { font-size: 1rem; font-weight: 600; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.movie-card-year { font-size: 0.85rem; color: var(--muted); }
+.movie-rating-badge { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; color: #ffc107; }
+.movie-card-info { padding: 14px; }
+.movie-card-title { font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Кнопки */
-button, .button { display: inline-flex; align-items: center; justify-content: center; padding: 12px 24px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; }
-button:hover, .button:hover { background: var(--card-hover); border-color: var(--accent); }
+button, .button { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-weight: 600; cursor: pointer; text-decoration: none; }
+button:hover, .button:hover { background: var(--card-hover); }
 button.primary, .button.primary { background: var(--accent); border: none; color: #fff; }
 button.primary:hover { background: var(--accent-hover); }
+.icon-button { width: 34px; height: 34px; padding: 0; border-radius: 8px; }
 
-/* Фильтры и Тулбар */
 .catalog-toolbar { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-.catalog-toolbar input, .catalog-toolbar select { flex: 1; min-width: 200px; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 0.95rem; }
+.catalog-toolbar input, .catalog-toolbar select { flex: 1; min-width: 180px; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; color: var(--text); }
 .quick-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
-.chip { padding: 8px 16px; border-radius: 20px; background: var(--card); border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-size: 0.9rem; }
-.chip.active, .chip:hover { background: var(--accent); color: #fff; border-color: transparent; }
+.chip { padding: 8px 16px; border-radius: 20px; background: var(--card); border: 1px solid var(--border); color: var(--muted); cursor: pointer; }
+.chip.active { background: var(--accent); color: #fff; border-color: transparent; }
 
-/* Главная: Баннер и Настроения */
 .hero { background: linear-gradient(135deg, var(--bg-secondary), var(--card)); border: 1px solid var(--border); padding: 40px; border-radius: var(--radius); margin-bottom: 40px; }
-.hero h1 { font-size: 2.2rem; margin-bottom: 12px; }
-.hero p { color: var(--muted); margin-bottom: 24px; max-width: 600px; }
-.hero-actions { display: flex; gap: 16px; }
-.mood-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 40px; }
-.mood-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
-.mood-card:hover { border-color: var(--accent); background: var(--card-hover); }
-.mood-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+.mood-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 40px; }
+.mood-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; }
+.mood-icon { font-size: 1.8rem; display: block; margin-bottom: 6px; }
 
-/* Модальное окно (Фильм инфо) */
-.modal-overlay { position: fixed; inset: 0; background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; animation: fadeIn 0.2s ease; }
-.modal-content { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 24px; max-width: 800px; width: 100%; position: relative; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-.modal-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.05); border: none; width: 36px; height: 36px; border-radius: 50%; color: var(--text); font-size: 1.5rem; display: grid; place-items: center; cursor: pointer; z-index: 10; }
-.modal-body { display: flex; flex-direction: row; gap: 30px; padding: 40px; }
-.modal-poster-side { width: 240px; flex-shrink: 0; height: 360px; border-radius: var(--radius); overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-content { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 24px; max-width: 760px; width: 100%; position: relative; overflow: hidden; }
+.modal-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.05); border: none; width: 36px; height: 36px; border-radius: 50%; color: var(--text); font-size: 1.4rem; cursor: pointer; z-index: 10; display: grid; place-items: center; }
+.modal-body { display: flex; gap: 30px; padding: 40px; }
+.modal-poster-side { width: 220px; height: 330px; border-radius: var(--radius); overflow: hidden; flex-shrink: 0; }
 .modal-poster-side img { width: 100%; height: 100%; object-fit: cover; }
-.modal-info-side { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+.modal-info-side { display: flex; flex-direction: column; gap: 16px; }
 .modal-meta { display: flex; gap: 10px; }
-.modal-badge { background: var(--card); padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; border: 1px solid var(--border); }
-.modal-badge.rating { color: #ffc107; }
-#modalOverview { color: var(--muted); line-height: 1.6; font-size: 1rem; }
+.modal-badge { background: var(--card); padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; }
 
-/* Игра */
-.game-container { max-width: 500px; margin: 0 auto; text-align: center; }
-.game-score { font-size: 1.3rem; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
-.game-frame { width: 100%; height: 280px; border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; border: 1px solid var(--border); background: var(--card); }
-.game-frame img { width: 100%; height: 100%; object-fit: cover; filter: blur(20px); transition: filter 0.4s ease; }
-.game-frame.guessed img { filter: blur(0px); }
-.game-options { display: grid; grid-template-columns: 1fr; gap: 12px; }
-.game-options button { width: 100%; padding: 14px; text-align: left; justify-content: flex-start; }
-.game-options button.correct { background: #2e7d32 !important; border-color: #4caf50 !important; color: #fff; }
-.game-options button.wrong { background: #c62828 !important; border-color: #f44336 !important; color: #fff; }
+.game-container { max-width: 460px; margin: 0 auto; }
+.game-score { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 12px; text-align: center; }
+.game-frame { width: 100%; height: 260px; border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); background: #000; }
+.game-frame img { width: 100%; height: 100%; object-fit: cover; filter: blur(22px); transition: filter 0.3s; }
+.game-frame.guessed img { filter: blur(0px) !important; }
+.game-options { display: grid; gap: 10px; }
+.game-options button { width: 100%; padding: 12px; text-align: left; justify-content: flex-start; }
+.game-options button.correct { background: #2e7d32; border-color: #4caf50; color: white; }
+.game-options button.wrong { background: #c62828; border-color: #f44336; color: white; }
 
-/* Адаптивность для мобильных устройств (Телефон) */
+.profile-card { display: flex; align-items: center; gap: 20px; background: var(--bg-secondary); padding: 24px; border-radius: var(--radius); border: 1px solid var(--border); }
+#profileAvatar { font-size: 2.5rem; width: 70px; height: 70px; background: var(--card); border-radius: 50%; display: grid; place-items: center; }
+
+#toast { position: fixed; bottom: 20px; right: 20px; background: #181824; border: 1px solid var(--accent); color: #fff; padding: 12px 24px; border-radius: 12px; display: none; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
 @media (max-width: 768px) {
-  .sidebar {
-    width: 100%; height: 64px; flex-direction: row; position: fixed; top: auto; bottom: 0; left: 0; right: 0;
-    padding: 0 10px; justify-content: space-around; align-items: center; border-right: none; border-top: 1px solid var(--border); box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
-  }
+  .sidebar { width: 100%; height: 60px; flex-direction: row; position: fixed; top: auto; bottom: 0; left: 0; right: 0; padding: 0 10px; justify-content: space-around; align-items: center; border-right: none; border-top: 1px solid var(--border); }
   .brand, .sidebar-bottom { display: none; }
   .side-nav { flex-direction: row; width: 100%; justify-content: space-between; }
-  .nav-link { padding: 8px 12px; flex-direction: column; gap: 4px; font-size: 0.75rem; border-radius: 8px; }
-  .nav-link span { font-size: 1.1rem; }
-  .nav-link.active { box-shadow: none; background: transparent; color: var(--accent); }
+  .nav-link { padding: 6px; flex-direction: column; font-size: 0.7rem; gap: 2px; }
   .main-content { margin-left: 0; padding: 20px 20px 80px 20px; }
   .modal-body { flex-direction: column; padding: 20px; }
-  .modal-poster-side { width: 100%; height: 260px; }
+  .modal-poster-side { width: 100%; height: 240px; }
 }
