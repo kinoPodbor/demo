@@ -5,38 +5,37 @@
   const TMDB_BASE = "https://themoviedb.org";
   const TMDB_IMAGE = "https://tmdb.org";
   const STORAGE_KEY = "kinopod_data_v3";
+  const AUTH_URL = "https://workers.dev"; [1]
 
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
 
   const state = {
-    section: "home",
-    filter: "popular",
-    page: 1,
-    movies: [],
-    loading: false,
-    currentGame: {
-      correctMovie: null,
-      options: []
-    }
+    section: "home", filter: "popular", page: 1,
+    movies: [], loading: false,
+    currentGame: { correctMovie: null, options: [] }
   };
 
   const defaultData = {
-    profile: { name: "Киноман", emoji: "🍿" },
-    score: 0
+    profile: { name: "Гость", emoji: "🎭", isYandex: false, avatarUrl: "" },
+    score: 0, theme: "dark"
   };
 
   let data = (() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       return saved ? { ...defaultData, ...JSON.parse(saved) } : structuredClone(defaultData);
-    } catch {
-      return structuredClone(defaultData);
-    }
+    } catch { return structuredClone(defaultData); }
   })();
 
   function saveData() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { console.error(e); }
+  }
+
+  function showToast(msg) {
+    const t = $("#toast"); if (!t) return;
+    t.textContent = msg; t.style.display = "block";
+    setTimeout(() => t.style.display = "none", 3000);
   }
 
   function escapeHTML(str = "") {
@@ -77,8 +76,7 @@
   }
 
   async function loadCatalog(append = false) {
-    if (state.loading) return;
-    state.loading = true;
+    if (state.loading) return; state.loading = true;
     const grid = $("#movieGrid");
     if (!append) grid.innerHTML = '<div class="loading-state">Загрузка каталога...</div>';
 
@@ -95,15 +93,13 @@
       
       if (!append) state.movies = [];
       state.movies = [...state.movies, ...res.results];
-
       renderMovies(grid, res.results, append);
     } catch (e) { grid.innerHTML = '<div>Не удалось загрузить фильмы.</div>'; }
     finally { state.loading = false; }
   }
 
   async function loadHomeMovies() {
-    const grid = $("#homeMovieGrid");
-    if (!grid) return;
+    const grid = $("#homeMovieGrid"); if (!grid) return;
     try {
       const res = await fetchAPI("/movie/popular", { page: 1 });
       renderMovies(grid, res.results.slice(0, 8), false);
@@ -119,12 +115,10 @@
         </div>
         <div class="movie-card-info">
           <h3 class="movie-card-title">${escapeHTML(m.title)}</h3>
-          <span class="movie-card-year">${m.release_date ? m.release_date.slice(0, 4) : "—"}</span>
         </div>
       </article>
     `).join("");
-    if (append) container.insertAdjacentHTML("beforeend", html);
-    else container.innerHTML = html;
+    if (append) container.insertAdjacentHTML("beforeend", html); else container.innerHTML = html;
   }
 
   async function showMovieModal(id) {
@@ -139,14 +133,11 @@
     } catch (e) { console.error(e); }
   }
 
-  // Обновленный функционал Угадайки
   async function setupGameRound() {
-    const playWindow = $("#gamePlayWindow");
-    const startWindow = $("#gameStartWindow");
-    startWindow.style.display = "none";
-    playWindow.style.display = "block";
+    $("#gameStartWindow").style.display = "none";
+    $("#gamePlayWindow").style.display = "block";
     $("#gameNextBtn").style.display = "none";
-    $(".game-frame").classList.remove("guessed");
+    $("#gameFrameBlock").classList.remove("guessed");
     $("#gameScoreValue").textContent = data.score;
 
     try {
@@ -165,14 +156,73 @@
       options.sort(() => Math.random() - 0.5);
       state.currentGame.options = options;
 
-      $("#gameFrameImg").src = TMDB_IMAGE + "w500" + correct.poster_path;
+      const img = $("#gameFrameImg");
+      img.src = TMDB_IMAGE + "w500" + correct.poster_path;
+      
       $("#gameOptionsGrid").innerHTML = options.map(o => `
         <button class="button game-opt-btn" data-id="${o.id}">${escapeHTML(o.title)}</button>
       `).join("");
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); showToast("Не удалось загрузить раунд"); }
+  }
+
+  function applyTheme(themeName) {
+    document.documentElement.setAttribute("data-theme", themeName);
+    data.theme = themeName; saveData();
+  }
+
+  function renderProfile() {
+    const isYandex = data.profile.isYandex;
+    $("#miniProfileName").textContent = data.profile.name;
+    $("#profileName").textContent = data.profile.name;
+    $("#authStatus").textContent = isYandex ? "Яндекс ID" : "Локальный профиль";
+    $("#profileStatusLabel").textContent = isYandex ? "Авторизован через Яндекс" : "Локальный профиль";
+
+    const avatarHTML = (isYandex && data.profile.avatarUrl) 
+      ? `<img src="${data.profile.avatarUrl}" alt="Ava">` 
+      : data.profile.emoji;
+
+    $("#miniAvatar").innerHTML = avatarHTML;
+    $("#profileAvatar").innerHTML = avatarHTML;
+    
+    if (isYandex) {
+      $("#loginBtn").style.display = "none";
+      $("#logoutBtn").style.display = "inline-flex";
+    } else {
+      $("#loginBtn").style.display = "block";
+      $("#logoutBtn").style.display = "none";
+    }
+  }
+
+  function handleYandexAuth() {
+    window.location.href = `${AUTH_URL}/login`; [1]
+  }
+
+  async function checkAuthCallback() {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    
+    if (token || window.location.hash.includes("token")) {
+      try {
+        const res = await fetch(`${AUTH_URL}/me`, { headers: { "Authorization": `Bearer ${token}` } }); [1]
+        if (res.ok) {
+          const userData = await res.json();
+          data.profile = {
+            name: userData.display_name || userData.first_name,
+            emoji: "🎭",
+            isYandex: true,
+            avatarUrl: userData.avatar_url || "" 
+          };
+          saveData(); renderProfile();
+          showToast("Успешный вход через Яндекс!");
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } catch (e) { console.error("Ошибка OAuth", e); }
+    }
   }
 
   function init() {
+    applyTheme(data.theme);
+
     document.addEventListener("click", e => {
       const link = e.target.closest('a[href^="#"]');
       if (link) { e.preventDefault(); navigate(link.getAttribute("href").slice(1)); return; }
@@ -193,49 +243,9 @@
         const correctId = state.currentGame.correctMovie.id;
         
         $$(".game-opt-btn").forEach(b => b.disabled = true);
-        $(".game-frame").classList.add("guessed");
+        $("#gameFrameBlock").classList.add("guessed");
 
         if (selectedId === correctId) {
-          btn.classList.add("correct");
-          data.score += 10;
-          saveData();
+          btn.classList.add("correct"); data.score += 10; saveData();
           $("#gameScoreValue").textContent = data.score;
         } else {
-          btn.classList.add("wrong");
-          $$(".game-opt-btn").forEach(b => { if (parseInt(b.dataset.id) === correctId) b.classList.add("correct"); });
-        }
-        $("#gameNextBtn").style.display = "block";
-      }
-    });
-
-    $("#closeModal")?.addEventListener("click", () => $("#movieModal").setAttribute("hidden", "true"));
-    $("#movieModal")?.addEventListener("click", e => { if (e.target === $("#movieModal")) $("#movieModal").setAttribute("hidden", "true"); });
-    
-    $("#searchInput")?.addEventListener("input", () => { state.page = 1; loadCatalog(false); });
-    $("#genreSelect")?.addEventListener("change", () => { state.page = 1; loadCatalog(false); });
-    $("#sortSelect")?.addEventListener("change", () => { state.page = 1; loadCatalog(false); });
-    
-    $("#loadMore")?.addEventListener("click", () => { state.page++; loadCatalog(true); });
-    $("#startGame")?.addEventListener("click", setupGameRound);
-    $("#gameNextBtn")?.addEventListener("click", setupGameRound);
-
-    $$("#quickFilters .chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        $$("#quickFilters .chip").forEach(c => c.classList.remove("active"));
-        chip.classList.add("active");
-        state.filter = chip.dataset.filter;
-        state.page = 1;
-        loadCatalog(false);
-      });
-    });
-
-    if ($("#profileName")) $("#profileName").textContent = data.profile.name;
-    if ($("#profileAvatar")) $("#profileAvatar").textContent = data.profile.emoji;
-
-    loadGenres();
-    loadHomeMovies();
-    navigate("home");
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
-})();
